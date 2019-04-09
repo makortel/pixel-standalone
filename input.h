@@ -12,6 +12,7 @@ struct alignas(128) Input {
   unsigned int wordCounter;
 };
 
+inline
 Input read_input() {
   Input ret;
 

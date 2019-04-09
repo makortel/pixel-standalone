@@ -5,6 +5,10 @@
 
 #include "pixelgpudetails.h"
 
+#ifdef DIGI_CUDA
+#include "GPUSimpleVector.h"
+#endif
+
 struct alignas(128) Output {
   uint16_t xx[pixelgpudetails::MAX_FED_WORDS];
   uint16_t yy[pixelgpudetails::MAX_FED_WORDS];
@@ -16,6 +20,9 @@ struct alignas(128) Output {
 
 #ifdef DIGI_NAIVE
   std::vector<PixelErrorCompact> err;
+#elif defined DIGI_CUDA
+  PixelErrorCompact err_d[pixelgpudetails::MAX_FED_WORDS];
+  GPU::SimpleVector<PixelErrorCompact> err;
 #endif
 };
 
