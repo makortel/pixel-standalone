@@ -12,6 +12,10 @@
 #include <cuda_runtime.h>
 #include "rawtodigi_cuda.h"
 #include "cudaCheck.h"
+#elif defined DIGI_CUPLA
+#include <cuda_to_cupla.hpp>
+#include "rawtodigi_cupla.h"
+#include "cuplaCheck.h"
 #endif
 
 namespace {
@@ -46,6 +50,9 @@ int main() {
 #ifdef DIGI_CUDA
   cudaStream_t stream;
   cudaStreamCreate(&stream);
+#elif defined DIGI_CUPLA
+  cuplaStream_t stream;
+  cuplaStreamCreate(&stream);
 #endif
 
   int totaltime = 0;
@@ -100,6 +107,37 @@ int main() {
     cudaFree(input_d);
     cudaFreeHost(output_h);
     cudaFreeHost(input_h);
+#elif defined DIGI_CUPLA
+    Input *input_d, *input_h;
+    cuplaCheck(cuplaMalloc((void **) &input_d, sizeof(Input)));
+    cuplaCheck(cuplaMallocHost((void **) &input_h, sizeof(Input)));
+    std::memcpy(input_h, &input, sizeof(Input));
+
+    Output *output_d, *output_h;
+    cuplaCheck(cuplaMalloc((void **) &output_d, sizeof(Output)));
+    cuplaCheck(cuplaMallocHost((void **) &output_h, sizeof(Output)));
+    output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    cuplaCheck(cuplaMemcpyAsync(input_d, input_h, sizeof(Input), cuplaMemcpyHostToDevice, stream));
+    cuplaCheck(cuplaMemcpyAsync(output_d, output_h, sizeof(Output), cuplaMemcpyHostToDevice, stream));
+
+    cupla::rawtodigi(input_d, output_d,
+                    input.wordCounter,
+                    true, true, false, stream);
+
+    cuplaCheck(cuplaMemcpyAsync(output_h, output_d, sizeof(Output), cuplaMemcpyDeviceToHost, stream));
+    cuplaCheck(cuplaStreamSynchronize(stream));
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    output_h->err.set_data(output_h->err_d);
+    std::memcpy(output.get(), output_h, sizeof(Output));
+    output->err.set_data(output->err_d);
+
+    cuplaFree(output_d);
+    cuplaFree(input_d);
+    cuplaFreeHost(output_h);
+    cuplaFreeHost(input_h);
 #endif
 
     auto diff = stop - start;
@@ -113,6 +151,8 @@ int main() {
 
 #ifdef DIGI_CUDA
   cudaStreamDestroy(stream);
+#elif defined DIGI_CUPLA
+  cuplaStreamDestroy(stream);
 #endif
   
   return 0;

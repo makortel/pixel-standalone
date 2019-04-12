@@ -5,7 +5,7 @@
 
 #include "pixelgpudetails.h"
 
-#ifdef DIGI_CUDA
+#if defined DIGI_CUDA || DIGI_CUPLA
 #include "GPUSimpleVector.h"
 #endif
 
@@ -20,7 +20,7 @@ struct alignas(128) Output {
 
 #ifdef DIGI_NAIVE
   std::vector<PixelErrorCompact> err;
-#elif defined DIGI_CUDA
+#elif defined DIGI_CUDA || defined DIGI_CUPLA
   PixelErrorCompact err_d[pixelgpudetails::MAX_FED_WORDS];
   GPU::SimpleVector<PixelErrorCompact> err;
 #endif

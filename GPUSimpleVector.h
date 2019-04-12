@@ -6,7 +6,11 @@
 #include <type_traits>
 #include <utility>
 
+#if defined DIGI_CUDA
 #include <cuda.h>
+#elif defined DIGI_CUPLA
+#include <cuda_to_cupla.hpp>
+#endif
 
 namespace GPU {
 template <class T> struct SimpleVector {
@@ -51,7 +55,35 @@ template <class T> struct SimpleVector {
       return T(); //undefined behaviour
   }
 
-#ifdef __CUDACC__
+#ifdef DIGI_CUPLA
+
+  template <typename T_Acc>
+  ALPAKA_FN_ACC
+  int push_back(T_Acc const& acc, const T &element) {
+    auto previousSize = atomicAdd(&m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      atomicSub(&m_size, 1);
+      return -1;
+    }
+  }
+
+  template <typename T_Acc, class... Ts>
+  ALPAKA_FN_ACC
+  int emplace_back(T_Acc const& acc, Ts &&... args) {
+    auto previousSize = atomicAdd(&m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      atomicSub(&m_size, 1);
+      return -1;
+    }
+  }
+
+#elif defined __CUDACC__
 
   // thread-safe version of the vector, when used in a CUDA kernel
   __device__
@@ -80,6 +112,7 @@ template <class T> struct SimpleVector {
   }
 
 #endif // __CUDACC__
+
   inline constexpr bool empty() const { return m_size==0;}
   inline constexpr bool full() const { return m_size==m_capacity;}
   inline constexpr T& operator[](int i) { return m_data[i]; }
