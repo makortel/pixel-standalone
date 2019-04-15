@@ -13,6 +13,8 @@ The purpose of this test program is to experiment with various
 |                | `main-cupla-seq-seq-sync`    |`cupla-seq-seq-sync`   | `DIGI_CUPLA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`, `CUPLA_STREAM_ASYNC_ENABLED=0`    |
 |                | `main-cupla-tbb-seq-async`   |`cupla-tbb-seq-async`  | `DIGI_CUPLA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`, `CUPLA_STREAM_ASYNC_ENABLED=1`    |
 | Cupla on GPU   | `main-cupla-cuda-async`      |`cupla-cuda-async`     | `DIGI_CUPLA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`,        `CUPLA_STREAM_ASYNC_ENABLED=1`    |
+| Kokkos on CPU  | `main-kokkos-serial`         |`kokkos-serial`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
+|                | `main-kokkos-openmp`         |`kokkos-openmp`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
 
 ### Naive CPU
 
@@ -34,6 +36,24 @@ The TBB backend requires a small patch tu Cupla itself (see [`cupla.patch`]).
 Rather than using the advertised `CMake`-based approach, one can build a shared
 library for each Cupla backend, and link it directly with the target program,
 as described [here](AlpakaAndCupla.md).
+
+### Kokkos
+
+#### Install Kokkos
+```
+# In some directory
+git clone https://github.com/kokkos/kokkos.git
+cd kokkos
+export KOKKOS_SRC=$PWD
+
+# Define installation path
+export KOKKOS_BASE=...
+
+# In some other, temporary directory
+$KOKKOS_SRC/generate_makefile.bash --prefix=$KOKKOS_BASE --cxxstandard=c++17 --with-openmp --with-pthread --with-serial [--with-cuda=PATH_TO_CUDA]
+make kokkoslib
+make install
+```
 
 ## How to add a new implementation?
 

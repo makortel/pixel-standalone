@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async
+TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async kokkos-serial kokkos-openmp
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -15,6 +15,13 @@ CUPLA_BASE  := $(HOME)/src/alpaka/cupla
 CUPLA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include -I$(CUPLA_BASE)/include -L$(CUPLA_BASE)/lib
 
 all: $(TARGETS)
+
+# Recommended to include only after the first target
+# https://github.com/kokkos/kokkos/wiki/Compiling#42-using-kokkos-makefile-system
+ifdef KOKKOS_BASE
+  include $(KOKKOS_BASE)/Makefile.kokkos
+endif
+
 
 debug: $(TARGETS:%=debug-%)
 
@@ -75,3 +82,15 @@ main-cupla-tbb-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 debug-cupla-tbb-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o debug-cupla-tbb-seq-async main.cc rawtodigi_cupla.cc -lcupla-tbb-seq-async -ltbb -lrt
 
+
+# Kokkos implementation, serial backend
+kokkos-serial: main-kokkos-serial
+
+main-kokkos-serial: main.cc rawtodigi_kokkos.h
+	$(CXX) $(CXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_LDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o main-kokkos-serial main.cc $(KOKKOS_LIBS)
+
+# Kokkos implementation, OpenMP backend
+kokkos-openmp: main-kokkos-openmp
+
+main-kokkos-openmp: main.cc rawtodigi_kokkos.h
+	$(CXX) $(CXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_LDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o main-kokkos-openmp main.cc $(KOKKOS_LIBS)

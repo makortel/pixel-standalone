@@ -16,6 +16,9 @@
 #include <cuda_to_cupla.hpp>
 #include "rawtodigi_cupla.h"
 #include "cuplaCheck.h"
+#elif defined DIGI_KOKKOS
+#include <Kokkos_Core.hpp>
+#include "rawtodigi_kokkos.h"
 #endif
 
 namespace {
@@ -43,7 +46,11 @@ int countModules(const uint16_t *id, int numElements) {
   return nmod;
 }
 
-int main() {
+int main(int argc, char **argv) {
+#ifdef DIGI_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
+
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
@@ -147,6 +154,26 @@ int main() {
     cuplaCheck(cuplaStreamSynchronize(stream));
     auto stop = std::chrono::high_resolution_clock::now();
 #endif // ALPAKA_ACC_GPU_CUDA_ENABLED
+#elif defined DIGI_KOKKOS
+    auto start = std::chrono::high_resolution_clock::now();
+
+    auto inputPtr = &input;
+    auto outputPtr = output.get();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<
+#ifdef DIGI_KOKKOS_SERIAL
+                         Kokkos::Serial
+#elif defined DIGI_KOKKOS_OPENMP
+                         Kokkos::OpenMP
+#endif
+                         >(0, input.wordCounter),
+                         KOKKOS_LAMBDA (const size_t i) {
+                           kokkos::rawtodigi(inputPtr, outputPtr, inputPtr->wordCounter,
+                                             true, true, false, i);
+      });
+    Kokkos::fence();
+
+    auto stop = std::chrono::high_resolution_clock::now();
 #endif
 
     auto diff = stop - start;
@@ -162,6 +189,8 @@ int main() {
   cudaStreamDestroy(stream);
 #elif defined DIGI_CUPLA
   cuplaStreamDestroy(stream);
+#elif defined DIGI_KOKKOS
+  Kokkos::finalize();
 #endif
   
   return 0;
