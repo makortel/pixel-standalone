@@ -5,7 +5,7 @@ The purpose of this test program is to experiment with various
 
 ## Current implementations
 
-| Implementation | Execuable            | `make` target | `#ifdef` macro |
+| Implementation | Executable           | `make` target | `#ifdef` macro |
 |----------------|----------------------|---------------|----------------|
 | Naive CPU      | `main-naive`         |`naive`        | `DIGI_NAIVE`   |
 | CUDA           | `main-cuda`          |`cuda`         | `DIGI_CUDA`    |
