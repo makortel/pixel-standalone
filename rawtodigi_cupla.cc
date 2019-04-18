@@ -387,10 +387,10 @@ namespace cupla {
     GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
 
 
-    int32_t first = threadIdx.x + blockIdx.x*blockDim.x;
-    for (int32_t iloop=first, nend=wordCounter; iloop<nend; iloop+=blockDim.x*gridDim.x) { 
-
-        auto gIndex  = iloop;
+    int32_t first = (threadIdx.x + blockIdx.x * blockDim.x) * elemDim.x;
+    for (int32_t iloop = first; iloop < wordCounter; iloop += gridDim.x * blockDim.x * elemDim.x) {
+      int32_t last = std::min(iloop + elemDim.x, wordCounter);
+      for (auto gIndex = iloop; gIndex < last; ++gIndex) {
         xx[gIndex]   = 0;
         yy[gIndex]   = 0;
         adc[gIndex]  = 0;
@@ -488,6 +488,7 @@ namespace cupla {
         pdigi[gIndex] = pack(globalPix.row, globalPix.col, adc[gIndex]);
         moduleId[gIndex] = detId.moduleId;
         rawIdArr[gIndex] = rawId;
+      }
     } // end of loop (gIndex < end)
 
   } // end of Raw to Digi kernel

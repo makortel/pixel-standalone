@@ -108,6 +108,7 @@ int main() {
     cudaFreeHost(output_h);
     cudaFreeHost(input_h);
 #elif defined DIGI_CUPLA
+#if defined ALPAKA_ACC_GPU_CUDA_ENABLED
     Input *input_d, *input_h;
     cuplaCheck(cuplaMalloc((void **) &input_d, sizeof(Input)));
     cuplaCheck(cuplaMallocHost((void **) &input_h, sizeof(Input)));
@@ -138,6 +139,14 @@ int main() {
     cuplaFree(input_d);
     cuplaFreeHost(output_h);
     cuplaFreeHost(input_h);
+#else // ALPAKA_ACC_GPU_CUDA_ENABLED
+    auto start = std::chrono::high_resolution_clock::now();
+    cupla::rawtodigi(&input, output.get(),
+                    input.wordCounter,
+                    true, true, false, stream);
+    cuplaCheck(cuplaStreamSynchronize(stream));
+    auto stop = std::chrono::high_resolution_clock::now();
+#endif // ALPAKA_ACC_GPU_CUDA_ENABLED
 #endif
 
     auto diff = stop - start;
