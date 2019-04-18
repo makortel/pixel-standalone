@@ -1,6 +1,6 @@
-TARGETS = naive cuda cupla-cuda cupla-serial
+TARGETS = naive cuda cupla-cuda cupla-serial cupla-tbb
 
-.PHONY: default all debug clean $(TARGETS)
+.PHONY: all debug clean $(TARGETS)
 
 CXX := g++-7
 CXX_FLAGS := -O2 -std=c++14 -ftemplate-depth-512
@@ -13,8 +13,6 @@ NVCC_DEBUG := -g -lineinfo
 ALPAKA_BASE := $(HOME)/src/alpaka/alpaka
 CUPLA_BASE  := $(HOME)/src/alpaka/cupla
 CUPLA_FLAGS := -DALPAKA_DEBUG=0 -DCUPLA_STREAM_ASYNC_ENABLED=1 -I$(ALPAKA_BASE)/include -I$(CUPLA_BASE)/include -L$(CUPLA_BASE)/lib
-
-default: naive
 
 all: $(TARGETS)
 
@@ -50,7 +48,7 @@ main-cupla-cuda: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 debug-cupla-cuda: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_GPU_CUDA_ENABLED $(CUPLA_FLAGS) -lcupla-cuda $(NVCC_DEBUG) -o debug-cupla-cuda main.cc rawtodigi_cupla.cc
 
-# Alpaka/cupla implementation, with serial cpu backend
+# Alpaka/cupla implementation, with serial backend
 cupla-serial: main-cupla-serial
 
 main-cupla-serial: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
@@ -58,3 +56,12 @@ main-cupla-serial: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 debug-cupla-serial: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o debug-cupla-serial main.cc rawtodigi_cupla.cc -lcupla-serial
+
+# Alpaka/cupla implementation, with TBB backend
+cupla-tbb: main-cupla-tbb
+
+main-cupla-tbb: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(CUPLA_FLAGS) -pthread -o main-cupla-tbb main.cc rawtodigi_cupla.cc -lcupla-tbb -ltbb -lrt
+
+debug-cupla-tbb: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o debug-cupla-tbb main.cc rawtodigi_cupla.cc -lcupla-tbb -ltbb -lrt
