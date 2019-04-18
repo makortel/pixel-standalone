@@ -1,0 +1,26 @@
+diff --git a/include/cupla/traits/IsThreadSeqAcc.hpp b/include/cupla/traits/IsThreadSeqAcc.hpp
+index eefb8a6..07d13f3 100644
+--- a/include/cupla/traits/IsThreadSeqAcc.hpp
++++ b/include/cupla/traits/IsThreadSeqAcc.hpp
+@@ -72,5 +72,21 @@ namespace traits
+     };
+ #endif
+ 
++#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
++    template<
++        typename T_KernelDim,
++        typename T_IndexType
++    >
++    struct IsThreadSeqAcc<
++        ::alpaka::acc::AccCpuTbbBlocks<
++            T_KernelDim,
++            T_IndexType
++        >
++    >
++    {
++        static constexpr bool value = true;
++    };
++#endif
++
+ }  // namespace traits
+ } // namespace cupla
