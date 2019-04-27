@@ -31,12 +31,11 @@ GPU.
 
 The Cupla test program can be compiled for different backends; so far it has
 been tested with the CUDA, serial, and TBB backends.
-The CUDA backend requires CUDA 9.2 or 10.0, and has been tested with gcc 7.
-The TBB backend requires a small patch tu Cupla itself (see [`cupla.patch`]).
+The CUDA backend requires CUDA 9.2 through 10.1, and has been tested with gcc 7.x
+and gcc 8.x.
 
-Rather than using the advertised `CMake`-based approach, one can build a shared
-library for each Cupla backend, and link it directly with the target program,
-as described [here](AlpakaAndCupla.md).
+Rather than using the advertised `CMake`-based approach, one can build Cupla as
+a single, header-only library, as described [here](AlpakaAndCupla.md).
 
 ### Kokkos
 
