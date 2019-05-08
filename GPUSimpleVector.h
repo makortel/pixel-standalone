@@ -10,6 +10,8 @@
 #include <cuda.h>
 #elif defined DIGI_CUPLA
 #include <cuda_to_cupla.hpp>
+#elif defined DIGI_KOKKOS
+#include <Kokkos_Core.hpp>
 #endif
 
 namespace GPU {
@@ -79,6 +81,33 @@ template <class T> struct SimpleVector {
       return previousSize;
     } else {
       atomicSub(&m_size, 1);
+      return -1;
+    }
+  }
+
+#elif defined DIGI_KOKKOS
+
+  KOKKOS_INLINE_FUNCTION
+  int push_back(const T &element) {
+    auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      Kokkos::atomic_sub(&m_size, 1);
+      return -1;
+    }
+  }
+
+  template <class... Ts>
+  KOKKOS_INLINE_FUNCTION
+  int emplace_back(Ts &&... args) {
+    auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      Kokkos::atomic_sub(&m_size, 1);
       return -1;
     }
   }
