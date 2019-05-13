@@ -155,10 +155,42 @@ int main(int argc, char **argv) {
     auto stop = std::chrono::high_resolution_clock::now();
 #endif // ALPAKA_ACC_GPU_CUDA_ENABLED
 #elif defined DIGI_KOKKOS
-    auto start = std::chrono::high_resolution_clock::now();
+    const auto wordCounter = input.wordCounter;
 
-    auto inputPtr = &input;
-    auto outputPtr = output.get();
+#if defined DIGI_KOKKOS_CUDA
+    // Rather non-idiomatic use of Kokkos::View...
+    Kokkos::View<Input, Kokkos::CudaSpace> input_d{"input_d"};
+    Kokkos::View<Input, Kokkos::CudaSpace>::HostMirror input_h = Kokkos::create_mirror_view(input_d);
+    std::memcpy(input_h.data(), &input, sizeof(Input));
+
+    Kokkos::View<Output, Kokkos::CudaSpace> output_d{"output_d"};
+    Kokkos::View<Output, Kokkos::CudaSpace>::HostMirror output_h = Kokkos::create_mirror_view(output_d);
+    output_h(0).err.construct(pixelgpudetails::MAX_FED_WORDS, output_d.data()->err_d);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    Kokkos::deep_copy(input_d, input_h);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::Cuda>(0, input.wordCounter),
+                         KOKKOS_LAMBDA (const size_t i) {
+                           kokkos::rawtodigi(input_d, output_d, wordCounter,
+                                             true, true, false, i);
+      });
+    Kokkos::fence(); // I don't know if parallel_for is synchronous or not
+    Kokkos::deep_copy(output_h, output_d);
+    Kokkos::fence();
+
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    output_h(0).err.set_data(output_h(0).err_d);
+    std::memcpy(output.get(), output_h.data(), sizeof(Output));
+    output->err.set_data(output->err_d);
+
+#else // DIGI_KOKKOS_CUDA
+    // Rather non-idiomatic use of Kokkos::View...
+    Kokkos::View<Input, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> input_h{&input};
+    Kokkos::View<Output, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> output_h{output.get()};
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     Kokkos::parallel_for(Kokkos::RangePolicy<
 #ifdef DIGI_KOKKOS_SERIAL
@@ -168,12 +200,15 @@ int main(int argc, char **argv) {
 #endif
                          >(0, input.wordCounter),
                          KOKKOS_LAMBDA (const size_t i) {
-                           kokkos::rawtodigi(inputPtr, outputPtr, inputPtr->wordCounter,
+                           kokkos::rawtodigi(input_h, output_h, wordCounter,
                                              true, true, false, i);
       });
     Kokkos::fence();
-
     auto stop = std::chrono::high_resolution_clock::now();
+
+#endif // DIGI_KOKKOS_CUDA
+
+
 #endif
 
     auto diff = stop - start;
