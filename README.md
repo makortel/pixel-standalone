@@ -15,6 +15,7 @@ The purpose of this test program is to experiment with various
 | Cupla on GPU   | `main-cupla-cuda-async`      |`cupla-cuda-async`     | `DIGI_CUPLA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`,        `CUPLA_STREAM_ASYNC_ENABLED=1`    |
 | Kokkos on CPU  | `main-kokkos-serial`         |`kokkos-serial`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
 |                | `main-kokkos-openmp`         |`kokkos-openmp`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
+| Kokkos on GPU  | `main-kokkos-cuda`           |`kokkos-cuda`          | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
 
 ### Naive CPU
 
@@ -40,7 +41,7 @@ as described [here](AlpakaAndCupla.md).
 ### Kokkos
 
 #### Install Kokkos
-```
+```bash
 # In some directory
 git clone https://github.com/kokkos/kokkos.git
 cd kokkos
@@ -50,10 +51,16 @@ export KOKKOS_SRC=$PWD
 export KOKKOS_BASE=...
 
 # In some other, temporary directory
+# CPU-only
 $KOKKOS_SRC/generate_makefile.bash --prefix=$KOKKOS_BASE --cxxstandard=c++17 --with-openmp --with-pthread --with-serial [--with-cuda=PATH_TO_CUDA]
+# with CUDA,
+# $KOKKOS_SRC/generate_makefile.bash --prefix=$KOKKOS_BASE --cxxstandard=c++14 --with-openmp --with-pthread --with-serial --with-cuda=<PATH_TO_CUDA> --arch=Pascal60 --with-cuda-options=enable_lambda
 make kokkoslib
 make install
 ```
+
+In principle the following fix is needed, unless `$KOKKOS_SRC` is kept alive as well
+* Edit `$KOKKOS_BASE/Makefile.kokkos` to fix the path to `nvcc_wrapper` to point to `$KOKKOS_BASE` instead of `$KOKKOS_SRC`
 
 ## How to add a new implementation?
 

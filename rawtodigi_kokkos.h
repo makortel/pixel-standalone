@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include <Kokkos_Core.hpp>
+
 #include "pixelgpudetails.h"
 
 namespace kokkos {
@@ -11,7 +13,7 @@ namespace kokkos {
     using PackedDigiType = uint32_t;
 
     // Constructor: pre-computes masks and shifts from field widths
-    inline
+    KOKKOS_INLINE_FUNCTION
     constexpr Packing(unsigned int row_w, unsigned int column_w,
                       unsigned int time_w, unsigned int adc_w) :
       row_width(row_w),
@@ -51,13 +53,13 @@ namespace kokkos {
     uint32_t  max_adc;
   };
 
-  inline
+  KOKKOS_INLINE_FUNCTION
   constexpr Packing packing() {
     return Packing(11, 11, 0, 10);
   }
 
 
-  inline
+  KOKKOS_INLINE_FUNCTION
   uint32_t pack(uint32_t row, uint32_t col, uint32_t adc) {
     constexpr Packing thePacking = packing();
     adc = std::min(adc, thePacking.max_adc);
@@ -68,25 +70,30 @@ namespace kokkos {
   }
 
 
+  KOKKOS_INLINE_FUNCTION
   uint32_t getLink(uint32_t ww)  {
     return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
   }
 
 
+  KOKKOS_INLINE_FUNCTION
   uint32_t getRoc(uint32_t ww) {
     return ((ww >> pixelgpudetails::ROC_shift ) & pixelgpudetails::ROC_mask);
   }
 
 
+  KOKKOS_INLINE_FUNCTION
   uint32_t getADC(uint32_t ww) {
     return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask);
   }
 
 
+  KOKKOS_INLINE_FUNCTION
   bool isBarrel(uint32_t rawId) {
     return (1==((rawId>>25)&0x7));
   }
 
+  KOKKOS_INLINE_FUNCTION
   bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol)
   {
     constexpr uint32_t numRowsInRoc = 80;
@@ -96,17 +103,21 @@ namespace kokkos {
     return ((rocRow < numRowsInRoc) & (rocCol < numColsInRoc));
   }
 
+  KOKKOS_INLINE_FUNCTION
   bool dcolIsValid(uint32_t dcol, uint32_t pxid)
   {
     return ((dcol < 26) &  (2 <= pxid) & (pxid < 162));
   }
 
+  KOKKOS_INLINE_FUNCTION
   pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU * cablingMap, uint8_t fed, uint32_t link, uint32_t roc) {
     uint32_t index = fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link-1) * pixelgpudetails::MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = { cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index] };
     return detId;
   }
 
+
+  KOKKOS_INLINE_FUNCTION
   pixelgpudetails::Pixel frameConversion(bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
 
     int slopeRow  = 0, slopeCol = 0;
@@ -184,6 +195,7 @@ namespace kokkos {
     return global;
   }
 
+  KOKKOS_INLINE_FUNCTION
   uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false)
   {
     // debug = true;
@@ -217,6 +229,8 @@ namespace kokkos {
     return 0;
   }
 
+
+  KOKKOS_INLINE_FUNCTION
   uint32_t getErrRawID(uint8_t fedId, uint32_t errWord, uint32_t errorType, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false)
   {
     uint32_t rID = 0xffffffff;
@@ -280,6 +294,8 @@ namespace kokkos {
     return rID;
   }
   
+
+  KOKKOS_INLINE_FUNCTION
   uint8_t checkROC(uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false)
   {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
@@ -344,21 +360,23 @@ namespace kokkos {
     return errorFound ? errorType : 0;
   }
 
-  void rawtodigi(const Input *input, Output *output,
+  template <typename InputView, typename OutputView>
+  KOKKOS_INLINE_FUNCTION
+  void rawtodigi(const InputView& input, OutputView& output,
                  const uint32_t wordCounter,
                  bool useQualityInfo, bool includeErrors, bool debug,
                  const int32_t index)
   {
-    const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
-    const uint32_t* word = input->word;
-    const uint8_t* fedIds =input->fedId;
-    uint16_t* xx = output->xx;
-    uint16_t* yy = output->yy;
-    uint16_t* adc = output->adc;
-    uint32_t* pdigi = output->digi;
-    uint32_t* rawIdArr = output->rawIdArr;
-    uint16_t* moduleId = output->moduleInd;
-    GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
+    const SiPixelFedCablingMapGPU* cablingMap = &(input(0).cablingMap);
+    const uint32_t* word = input(0).word;
+    const uint8_t* fedIds =input(0).fedId;
+    uint16_t* xx = output(0).xx;
+    uint16_t* yy = output(0).yy;
+    uint16_t* adc = output(0).adc;
+    uint32_t* pdigi = output(0).digi;
+    uint32_t* rawIdArr = output(0).rawIdArr;
+    uint16_t* moduleId = output(0).moduleInd;
+    GPU::SimpleVector<PixelErrorCompact>* err = &(output(0).err);
 
     int32_t first = index;
     for (int32_t iloop=first, nend=index+1; iloop<nend; ++iloop) {

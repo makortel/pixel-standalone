@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async kokkos-serial kokkos-openmp
+TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async kokkos-serial kokkos-openmp kokkos-cuda
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -20,6 +20,11 @@ all: $(TARGETS)
 # https://github.com/kokkos/kokkos/wiki/Compiling#42-using-kokkos-makefile-system
 ifdef KOKKOS_BASE
   include $(KOKKOS_BASE)/Makefile.kokkos
+  CXX_KOKKOS := $(CXX)
+  ifeq ($(KOKKOS_INTERNAL_USE_CUDA),1)
+    CXX_KOKKOS := $(NVCC_WRAPPER)
+    KOKKOS_CXXFLAGS += --expt-relaxed-constexpr
+  endif
 endif
 
 
@@ -87,10 +92,16 @@ debug-cupla-tbb-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 kokkos-serial: main-kokkos-serial
 
 main-kokkos-serial: main.cc rawtodigi_kokkos.h
-	$(CXX) $(CXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_LDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o main-kokkos-serial main.cc $(KOKKOS_LIBS)
+	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o main-kokkos-serial main.cc $(KOKKOS_LIBS)
 
 # Kokkos implementation, OpenMP backend
 kokkos-openmp: main-kokkos-openmp
 
 main-kokkos-openmp: main.cc rawtodigi_kokkos.h
-	$(CXX) $(CXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_LDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o main-kokkos-openmp main.cc $(KOKKOS_LIBS)
+	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o main-kokkos-openmp main.cc $(KOKKOS_LIBS)
+
+# Kokkos implementation, CUDA backend
+kokkos-cuda: main-kokkos-cuda
+
+main-kokkos-cuda: main.cc rawtodigi_kokkos.h
+	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o main-kokkos-cuda main.cc $(KOKKOS_LIBS)
