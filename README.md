@@ -9,10 +9,11 @@ The purpose of this test program is to experiment with various
 |----------------|------------------------------|-----------------------|---------------------------------------------------------------------------------------|
 | Naive CPU      | `main-naive`                 |`naive`                | `DIGI_NAIVE`                                                                          |
 | CUDA           | `main-cuda`                  |`cuda`                 | `DIGI_CUDA`                                                                           |
-| Cupla on CPU   | `main-cupla-seq-seq-async`   |`cupla-seq-seq-async`  | `DIGI_CUPLA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`, `CUPLA_STREAM_ASYNC_ENABLED=1`    |
-|                | `main-cupla-seq-seq-sync`    |`cupla-seq-seq-sync`   | `DIGI_CUPLA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`, `CUPLA_STREAM_ASYNC_ENABLED=0`    |
-|                | `main-cupla-tbb-seq-async`   |`cupla-tbb-seq-async`  | `DIGI_CUPLA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`, `CUPLA_STREAM_ASYNC_ENABLED=1`    |
-| Cupla on GPU   | `main-cupla-cuda-async`      |`cupla-cuda-async`     | `DIGI_CUPLA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`,        `CUPLA_STREAM_ASYNC_ENABLED=1`    |
+| Cupla on CPU   | `main-cupla-seq-seq-async`   |`cupla-seq-seq-async`  | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                | `main-cupla-seq-seq-sync`    |`cupla-seq-seq-sync`   | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                | `main-cupla-tbb-seq-async`   |`cupla-tbb-seq-async`  | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
+|                | `main-cupla-opm2-seq-async`  |`cupla-opm2-seq-async` | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`   |
+| Cupla on GPU   | `main-cupla-cuda-async`      |`cupla-cuda-async`     | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
 | Kokkos on CPU  | `main-kokkos-serial`         |`kokkos-serial`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
 |                | `main-kokkos-openmp`         |`kokkos-openmp`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
 | Kokkos on GPU  | `main-kokkos-cuda`           |`kokkos-cuda`          | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
@@ -29,14 +30,13 @@ GPU.
 
 ### Cupla
 
-The Cupla test program can be compiled for different backends; so far it has
-been tested with the CUDA, serial, and TBB backends.
-The CUDA backend requires CUDA 9.2 or 10.0, and has been tested with gcc 7.
-The TBB backend requires a small patch tu Cupla itself (see [`cupla.patch`]).
+The Cupla test program can be compiled for different backends; so far it has been
+tested with the CUDA, serial, TBB and OpenMP backends.
+The CUDA backend requires CUDA 9.2 through 10.1, and has been tested with gcc 7.x
+and gcc 8.x.
 
-Rather than using the advertised `CMake`-based approach, one can build a shared
-library for each Cupla backend, and link it directly with the target program,
-as described [here](AlpakaAndCupla.md).
+Rather than using the advertised `CMake`-based approach, one can build Cupla as
+a single, header-only library, as described [here](AlpakaAndCupla.md).
 
 ### Kokkos
 
