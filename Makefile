@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async kokkos-serial kokkos-openmp kokkos-cuda
+TARGETS = naive cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async cupla-omp2-seq-async kokkos-serial kokkos-openmp kokkos-cuda
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -87,6 +87,14 @@ main-cupla-tbb-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 debug-cupla-tbb-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o debug-cupla-tbb-seq-async main.cc rawtodigi_cupla.cc -ltbb -lrt
 
+# Alpaka/cupla implementation, with the OpenMP 2 blocks backend
+cupla-omp2-seq-async: main-cupla-omp2-seq-async
+
+main-cupla-omp2-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o main-cupla-omp2-seq-async main.cc rawtodigi_cupla.cc
+
+debug-cupla-omp2-seq-async: main.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o debug-cupla-omp2-seq-async main.cc rawtodigi_cupla.cc
 
 # Kokkos implementation, serial backend
 kokkos-serial: main-kokkos-serial
