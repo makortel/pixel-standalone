@@ -2,16 +2,14 @@
 #include <cstdio>
 
 /* Do NOT include other headers that use CUDA runtime functions or variables
- * (see above) before this include.
- * The reason for this is that cupla renames CUDA host functions and device build in
- * variables by using macros and macro functions.
- * Do NOT include other specific includes such as `<cuda.h>` (driver functions,
- * etc.).
+ * before this include, because cupla renames CUDA host functions and device
+ * built-in variables using macros and macro functions.
+ * Do NOT include other specific includes such as `<cuda.h>`, etc.
  */
 #include <cuda_to_cupla.hpp>
 
 #include "rawtodigi_cupla.h"
-#include "cuplaCheck.h"
+#include "cudaCheck.h"
 
 namespace cupla {
   class Packing {
@@ -497,16 +495,16 @@ namespace cupla {
 
   void rawtodigi(const Input *input_d, Output *output_d,
                  const uint32_t wordCounter,
-                 bool useQualityInfo, bool includeErrors, bool debug, cuplaStream_t stream) {
+                 bool useQualityInfo, bool includeErrors, bool debug, cudaStream_t stream) {
     const int threadsPerBlock = 512;
     const int blocks = (wordCounter + threadsPerBlock-1) /threadsPerBlock; // fill it all
 
     CUPLA_KERNEL_OPTI(rawtodigi_kernel)(blocks, threadsPerBlock, 0, stream)(input_d,
-                                                             output_d,
-                                                             useQualityInfo,
-                                                             includeErrors,
-                                                             debug);
-    cuplaCheck(cuplaGetLastError());
+        output_d,
+        useQualityInfo,
+        includeErrors,
+        debug);
+    cudaCheck(cudaGetLastError());
   }     
   
 } // end namespace cupla

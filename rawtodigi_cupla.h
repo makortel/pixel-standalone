@@ -2,11 +2,9 @@
 #define RAWTODIGI_CUPLA_H
 
 /* Do NOT include other headers that use CUDA runtime functions or variables
- * (see above) before this include.
- * The reason for this is that cupla renames CUDA host functions and device build in
- * variables by using macros and macro functions.
- * Do NOT include other specific includes such as `<cuda.h>` (driver functions,
- * etc.).
+ * before this include, because cupla renames CUDA host functions and device
+ * built-in variables using macros and macro functions.
+ * Do NOT include other specific includes such as `<cuda.h>`, etc.
  */
 #include <cuda_to_cupla.hpp>
 

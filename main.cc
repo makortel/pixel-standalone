@@ -10,12 +10,17 @@
 #include "rawtodigi_naive.h"
 #elif defined DIGI_CUDA
 #include <cuda_runtime.h>
-#include "rawtodigi_cuda.h"
 #include "cudaCheck.h"
+#include "rawtodigi_cuda.h"
 #elif defined DIGI_CUPLA
+/* Do NOT include other headers that use CUDA runtime functions or variables
+ * before this include, because cupla renames CUDA host functions and device
+ * built-in variables using macros and macro functions.
+ * Do NOT include other specific includes such as `<cuda.h>`, etc.
+ */
 #include <cuda_to_cupla.hpp>
+#include "cudaCheck.h"
 #include "rawtodigi_cupla.h"
-#include "cuplaCheck.h"
 #elif defined DIGI_KOKKOS
 #include <Kokkos_Core.hpp>
 #include "rawtodigi_kokkos.h"
@@ -54,12 +59,9 @@ int main(int argc, char **argv) {
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
-#ifdef DIGI_CUDA
+#if defined DIGI_CUDA or defined DIGI_CUPLA
   cudaStream_t stream;
   cudaStreamCreate(&stream);
-#elif defined DIGI_CUPLA
-  cuplaStream_t stream;
-  cuplaStreamCreate(&stream);
 #endif
 
   int totaltime = 0;
@@ -117,41 +119,41 @@ int main(int argc, char **argv) {
 #elif defined DIGI_CUPLA
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED
     Input *input_d, *input_h;
-    cuplaCheck(cuplaMalloc((void **) &input_d, sizeof(Input)));
-    cuplaCheck(cuplaMallocHost((void **) &input_h, sizeof(Input)));
+    cudaCheck(cudaMalloc((void **) &input_d, sizeof(Input)));
+    cudaCheck(cudaMallocHost((void **) &input_h, sizeof(Input)));
     std::memcpy(input_h, &input, sizeof(Input));
 
     Output *output_d, *output_h;
-    cuplaCheck(cuplaMalloc((void **) &output_d, sizeof(Output)));
-    cuplaCheck(cuplaMallocHost((void **) &output_h, sizeof(Output)));
+    cudaCheck(cudaMalloc((void **) &output_d, sizeof(Output)));
+    cudaCheck(cudaMallocHost((void **) &output_h, sizeof(Output)));
     output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
 
     auto start = std::chrono::high_resolution_clock::now();
-    cuplaCheck(cuplaMemcpyAsync(input_d, input_h, sizeof(Input), cuplaMemcpyHostToDevice, stream));
-    cuplaCheck(cuplaMemcpyAsync(output_d, output_h, sizeof(Output), cuplaMemcpyHostToDevice, stream));
+    cudaCheck(cudaMemcpyAsync(input_d, input_h, sizeof(Input), cudaMemcpyHostToDevice, stream));
+    cudaCheck(cudaMemcpyAsync(output_d, output_h, sizeof(Output), cudaMemcpyHostToDevice, stream));
 
     cupla::rawtodigi(input_d, output_d,
                     input.wordCounter,
                     true, true, false, stream);
 
-    cuplaCheck(cuplaMemcpyAsync(output_h, output_d, sizeof(Output), cuplaMemcpyDeviceToHost, stream));
-    cuplaCheck(cuplaStreamSynchronize(stream));
+    cudaCheck(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDeviceToHost, stream));
+    cudaCheck(cudaStreamSynchronize(stream));
     auto stop = std::chrono::high_resolution_clock::now();
 
     output_h->err.set_data(output_h->err_d);
     std::memcpy(output.get(), output_h, sizeof(Output));
     output->err.set_data(output->err_d);
 
-    cuplaFree(output_d);
-    cuplaFree(input_d);
-    cuplaFreeHost(output_h);
-    cuplaFreeHost(input_h);
+    cudaFree(output_d);
+    cudaFree(input_d);
+    cudaFreeHost(output_h);
+    cudaFreeHost(input_h);
 #else // ALPAKA_ACC_GPU_CUDA_ENABLED
     auto start = std::chrono::high_resolution_clock::now();
     cupla::rawtodigi(&input, output.get(),
                     input.wordCounter,
                     true, true, false, stream);
-    cuplaCheck(cuplaStreamSynchronize(stream));
+    cudaCheck(cudaStreamSynchronize(stream));
     auto stop = std::chrono::high_resolution_clock::now();
 #endif // ALPAKA_ACC_GPU_CUDA_ENABLED
 #elif defined DIGI_KOKKOS
@@ -220,10 +222,8 @@ int main(int argc, char **argv) {
             << (static_cast<double>(totaltime)/NLOOPS) << " us"
             << std::endl;
 
-#ifdef DIGI_CUDA
+#if defined DIGI_CUDA or defined DIGI_CUPLA
   cudaStreamDestroy(stream);
-#elif defined DIGI_CUPLA
-  cuplaStreamDestroy(stream);
 #elif defined DIGI_KOKKOS
   Kokkos::finalize();
 #endif

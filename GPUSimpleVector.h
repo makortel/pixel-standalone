@@ -9,6 +9,11 @@
 #if defined DIGI_CUDA
 #include <cuda.h>
 #elif defined DIGI_CUPLA
+/* Do NOT include other headers that use CUDA runtime functions or variables
+ * before this include, because cupla renames CUDA host functions and device
+ * built-in variables using macros and macro functions.
+ * Do NOT include other specific includes such as `<cuda.h>`, etc.
+ */
 #include <cuda_to_cupla.hpp>
 #elif defined DIGI_KOKKOS
 #include <Kokkos_Core.hpp>
