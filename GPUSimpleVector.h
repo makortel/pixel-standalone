@@ -15,8 +15,15 @@
  * Do NOT include other specific includes such as `<cuda.h>`, etc.
  */
 #include <cuda_to_cupla.hpp>
+#elif defined DIGI_ALPAKA
+// #include <alpaka/standalone/CpuSerial.hpp>
+// #include "alpakaConfig.h"
+#include "alpakaConfigGpu.h"
+
 #elif defined DIGI_KOKKOS
 #include <Kokkos_Core.hpp>
+// #elif defined DIGI_ALPAKA
+// #include <alpaka/alpaka.hpp>
 #endif
 
 namespace GPU {
@@ -89,6 +96,35 @@ template <class T> struct SimpleVector {
       return -1;
     }
   }
+
+#elif defined DIGI_ALPAKA
+
+  template <typename T_Acc>
+  ALPAKA_FN_ACC
+  int push_back(T_Acc const& acc, const T &element) {
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
+      return -1;
+    }
+  }
+
+  template <typename T_Acc, class... Ts>
+  ALPAKA_FN_ACC
+  int emplace_back(T_Acc const& acc, Ts &&... args) {
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
+      return -1;
+    }
+  }
+
 
 #elif defined DIGI_KOKKOS
 

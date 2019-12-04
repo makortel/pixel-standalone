@@ -6,12 +6,11 @@
  * built-in variables using macros and macro functions.
  * Do NOT include other specific includes such as `<cuda.h>`, etc.
  */
-#include <cuda_to_cupla.hpp>
 
-#include "rawtodigi_cupla.h"
-#include "cudaCheck.h"
+#include "rawtodigi_alpakaGpu.h"
+// #include "cudaCheck.h"
 
-namespace cupla {
+namespace alpaka {
   class Packing {
   public:
     using PackedDigiType = uint32_t;
@@ -364,7 +363,7 @@ namespace cupla {
     return errorFound ? errorType : 0;
   }
 
-
+  template< typename TIdx>
   struct rawtodigi_kernel {
 
   template <typename T_Acc>
@@ -384,10 +383,19 @@ namespace cupla {
     uint16_t* moduleId = output->moduleInd;
     GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
 
+    uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+    uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+    uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const elemDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+    // reinterpret_cast<TIdx>(wordCounter);
 
-    int32_t first = (threadIdx.x + blockIdx.x * blockDim.x) * elemDim.x;
-    for (int32_t iloop = first; iloop < wordCounter; iloop += gridDim.x * blockDim.x * elemDim.x) {
-      int32_t last = std::min(iloop + elemDim.x, wordCounter);
+    // std::cout << gridDimension << std::endl;
+    // std::cout << blco[0] << std::endl;
+    // int32_t first = (threadIdx.x + blockIdx.x * blockDim.x) * elemDim.x;
+    int32_t first = (blockThreadIdx + gridBlockIdx * blockDimension) * elemDimension;
+    for (uint32_t iloop(first); iloop < wordCounter; iloop += gridDimension * blockDimension* elemDimension) {
+      int32_t last = std::min(iloop + elemDimension, wordCounter);
       for (auto gIndex = iloop; gIndex < last; ++gIndex) {
         xx[gIndex]   = 0;
         yy[gIndex]   = 0;
@@ -488,23 +496,47 @@ namespace cupla {
         rawIdArr[gIndex] = rawId;
       }
     } // end of loop (gIndex < end)
-
+    
   } // end of Raw to Digi kernel
 
   };
+  
+  void rawtodigi(const Input *input_d, Output *output_d, 
+                const uint32_t wordCounter,
+                bool useQualityInfo, bool includeErrors, bool debug,GpuCuda<1u>::QueueAsync queue) {
+    
+    using GpuCuda = GpuCuda<1u>;
+    using Vec = GpuCuda::Vec;
+    using Idx = GpuCuda::Idx;              
+    Vec const elementsPerThread(Vec::all(static_cast<Idx>(1)));
+    Vec const threadsPerBlock(Vec::all(static_cast<Idx>(512)));
+    Vec const blocksPerGrid(Vec::all(static_cast<Idx>(
+                          (wordCounter + threadsPerBlock[0] - 1) / threadsPerBlock[0])
+    ));
 
-  void rawtodigi(const Input *input_d, Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo, bool includeErrors, bool debug, cudaStream_t stream) {
-    const int threadsPerBlock = 512;
-    const int blocks = (wordCounter + threadsPerBlock-1) /threadsPerBlock; // fill it all
+    using WorkDiv = GpuCuda::WorkDiv;
 
-    CUPLA_KERNEL_OPTI(rawtodigi_kernel)(blocks, threadsPerBlock, 0, stream)(input_d,
-        output_d,
-        useQualityInfo,
-        includeErrors,
-        debug);
-    // cudaCheck(cudaGetLastError());// It blocks the cupla execution (??)
+    WorkDiv const workDiv(
+    blocksPerGrid,
+    threadsPerBlock,
+    elementsPerThread);   
+                    
+    rawtodigi_kernel<GpuCuda::Idx> kernel;
+
+    auto const taskRawToDigiKernel(alpaka::kernel::createTaskKernel<GpuCuda::Acc>(
+                                  workDiv,
+                                  kernel,
+                                  input_d,
+                                  output_d,
+                                  useQualityInfo,
+                                  includeErrors,
+                                  debug
+                                  ));
+
+    alpaka::queue::enqueue(queue, taskRawToDigiKernel);
+
+    
+       
   }     
   
 } // end namespace cupla
