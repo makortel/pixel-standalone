@@ -14,7 +14,7 @@ CXX_DEBUG := -g
 
 
 NVCC := /data/cmssw/slc7_amd64_gcc820/external/cuda/10.1.105-pafccj2/bin/nvcc -ccbin $(CXX)
-NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w -DALPAKA_CUDA_ARCH=60:70:75 -I/data/cmssw/slc7_amd64_gcc820/external/boost/1.67.0-pafccj/include/ -I$(TBB_ROOT) -L$(TBB_ROOT)/lib
+NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w -lineinfo -DALPAKA_CUDA_ARCH=60:70:75 -I/data/cmssw/slc7_amd64_gcc820/external/boost/1.67.0-pafccj/include/ -I$(TBB_ROOT) -L$(TBB_ROOT)/lib
 NVCC_DEBUG := -g -lineinfo
 
 BASE := /data/user/wredjeb
@@ -54,16 +54,25 @@ clean:
 
 # alpakaSer: main-alpaka-ser
 
-# main-alpaka-ser: main_alpakaSerial.cc rawtodigi_alpakaSerial.cc rawtodigi_alpakaSerial.h 
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSerial.cc
+# main-alpaka-ser: main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DCPU_SER -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
 
+# alpakaTBB: main-alpaka-tbb
+
+# main-alpaka-tbb: main_alpakaTBB.cc rawtodigi_alpakaTBB.cc
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DCPU_PARALLEL_TBB -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaTBB.cc rawtodigi_alpakaTBB.cc -ltbb -lrt -pthread 
+
+alpakaGpuCuda: main-alpaka-gpu
+
+main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaGpu.cu rawtodigi_alpakaGpu.cu 
 # alpakaTBB: main-alpaka-tbb
 # main-alpaka-tbb: main_alpakaTBB.cc rawtodigi_alpakaTBB.cc rawtodigi_alpakaTBB.h 
 # 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaTBB.cc rawtodigi_alpakaTBB.cc -ltbb -lrt
 
-alpakaGpuCuda: main-alpaka-gpu
-main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu rawtodigi_alpakaGpu.h 
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaGpu.cu rawtodigi_alpakaGpu.cu 
+# alpakaGpuCuda: main-alpaka-gpu
+# main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu rawtodigi_alpakaGpu.h 
+# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaGpu.cu rawtodigi_alpakaGpu.cu 
 
 # # CUDA implementation
 # cuda: main-cuda
@@ -120,7 +129,8 @@ main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu rawtodigi_alpakaGpu.h
 # 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 
-# ifdef KOKKOS_BASE
+# ifdef KOKKOS_BASEmain-alpaka-ser: main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+	# $(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
 # # Kokkos implementation, serial backend
 # kokkos-serial: main-kokkos-serial
 
