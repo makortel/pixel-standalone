@@ -6,31 +6,10 @@
 #include <type_traits>
 #include <utility>
 
-// #if defined DIGI_CUDA
-// #include <cuda.h>
-// #elif defined DIGI_CUPLA
-// /* Do NOT include other headers that use CUDA runtime functions or variables
-//  * before this include, because cupla renames CUDA host functions and device
-//  * built-in variables using macros and macro functions.
-//  * Do NOT include other specific includes such as `<cuda.h>`, etc.
-//  */
-// #include <cuda_to_cupla.hpp>
-// #elif defined DIGI_ALPAKA
-// // #include <alpaka/standalone/CpuSerial.hpp>
-// #include "alpakaConfigSer.h"
-// // #include "alpakaConfigGpu.h"
-
-// #elif defined DIGI_KOKKOS
-// #include <Kokkos_Core.hpp>
-// // #elif defined DIGI_ALPAKA
-// // #include <alpaka/alpaka.hpp>
-// #endif
-
-// #include "rawtodigi_alpakaSer.h"
 // #include "alpakaConfigSer.h"
 // #include "alpakaConfigTBB.h"
-#include "alpakaConfigGpu.h"
-// #include <alpaka/alpaka.hpp>
+// #include "alpakaConfigGpu.h"
+#include <alpaka/alpaka.hpp>
 
 namespace GPU {
 template <class T> struct SimpleVector {

@@ -1,5 +1,4 @@
-TARGETS = naive alpakaSer alpakaTBB alpakaGpuCuda cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async cupla-omp2-seq-async 
-# kokkos-serial kokkos-openmp kokkos-cuda
+TARGETS = naive alpakaSer alpakaTBB alpakaGpuCuda cuda cupla-cuda-async cupla-seq-seq-async cupla-seq-seq-sync cupla-tbb-seq-async cupla-omp2-seq-async kokkos-serial kokkos-openmp kokkos-cuda
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -42,118 +41,101 @@ clean:
 	rm -f $(TARGETS:%=main-%) $(TARGETS:%=debug-%)
 
 # Naive CPU implementation
-# naive: main-naive
+naive: main-naive
 
-# main-naive: main_naive.cc rawtodigi_naive.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
+main-naive: main_naive.cc rawtodigi_naive.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
 
-# debug-naive: main_naive.cc rawtodigi_naive.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE $(CXX_DEBUG) -o $@ main_naive.cc
+debug-naive: main_naive.cc rawtodigi_naive.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE $(CXX_DEBUG) -o $@ main_naive.cc
 
 #ALPAKA implementation
 
-# alpakaSer: main-alpaka-ser
+alpakaSer: main-alpaka-ser
 
-# main-alpaka-ser: main_alpakaSerial.cc rawtodigi_alpakaSer.cc
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DCPU_SER -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
+	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_SERIAL -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
 
-# alpakaTBB: main-alpaka-tbb
+alpakaTBB: main-alpaka-tbb
 
-# main-alpaka-tbb: main_alpakaTBB.cc rawtodigi_alpakaTBB.cc
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DCPU_PARALLEL_TBB -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaTBB.cc rawtodigi_alpakaTBB.cc -ltbb -lrt -pthread 
+main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
+	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_TBB -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^ -ltbb -lrt -pthread 
 
 alpakaGpuCuda: main-alpaka-gpu
 
-main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaGpu.cu rawtodigi_alpakaGpu.cu 
-# alpakaTBB: main-alpaka-tbb
-# main-alpaka-tbb: main_alpakaTBB.cc rawtodigi_alpakaTBB.cc rawtodigi_alpakaTBB.h 
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaTBB.cc rawtodigi_alpakaTBB.cc -ltbb -lrt
+main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
+	$(NVCC) -x cu $(NVCC_FLAGS) -DALPAKA_ACC_GPU_CUDA_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=GPU_CUDA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
 
-# alpakaGpuCuda: main-alpaka-gpu
-# main-alpaka-gpu: main_alpakaGpu.cu rawtodigi_alpakaGpu.cu rawtodigi_alpakaGpu.h 
-# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaGpu.cu rawtodigi_alpakaGpu.cu 
+#Alpaka/cupla implementation, with the CUDA GPU async backend
+cupla-cuda-async: main-cupla-cuda-async
 
-# # CUDA implementation
-# cuda: main-cuda
+main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# main-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu
+debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
+# Alpaka/cupla implementation, with the serial CPU async backend
+cupla-seq-seq-async: main-cupla-seq-seq-async
 
-# Alpaka/cupla implementation, with the CUDA GPU async backend
-# cupla-cuda-async: main-cupla-cuda-async
+main-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
+debug-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Alpaka/cupla implementation, with the serial CPU sync backend
+cupla-seq-seq-sync: main-cupla-seq-seq-sync
 
-# # Alpaka/cupla implementation, with the serial CPU async backend
-# cupla-seq-seq-async: main-cupla-seq-seq-async
+main-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# main-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
+debug-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# debug-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Alpaka/cupla implementation, with the TBB blocks backend
+cupla-tbb-seq-async: main-cupla-tbb-seq-async
 
-# # Alpaka/cupla implementation, with the serial CPU sync backend
-# cupla-seq-seq-sync: main-cupla-seq-seq-sync
+main-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
 
-# main-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
+debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
 
-# debug-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Alpaka/cupla implementation, with the OpenMP 2 blocks backend
+cupla-omp2-seq-async: main-cupla-omp2-seq-async
 
-# # Alpaka/cupla implementation, with the TBB blocks backend
-# cupla-tbb-seq-async: main-cupla-tbb-seq-async
+main-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# main-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
+debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
+ifdef KOKKOS_BASE
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+# Kokkos implementation, serial backend
+kokkos-serial: main-kokkos-serial
 
-# # Alpaka/cupla implementation, with the OpenMP 2 blocks backend
-# cupla-omp2-seq-async: main-cupla-omp2-seq-async
+main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
+	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
-# main-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Kokkos implementation, OpenMP backend
+kokkos-openmp: main-kokkos-openmp
 
-# debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
+	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
+# Kokkos implementation, CUDA backend
+kokkos-cuda: main-kokkos-cuda
 
-# ifdef KOKKOS_BASEmain-alpaka-ser: main_alpakaSerial.cc rawtodigi_alpakaSer.cc
-	# $(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
-# # Kokkos implementation, serial backend
-# kokkos-serial: main-kokkos-serial
+main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
+	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
-# main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
-# 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+else
+kokkos-serial:
 
-# # Kokkos implementation, OpenMP backend
-# kokkos-openmp: main-kokkos-openmp
+kokkos-openmp:
 
-# main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
-# 	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+kokkos-cuda:
 
-# # Kokkos implementation, CUDA backend
-# kokkos-cuda: main-kokkos-cuda
-
-# main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
-# 	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
-
-# else
-# kokkos-serial:
-
-# kokkos-openmp:
-
-# kokkos-cuda:
-
-# endif
+endif

@@ -6,7 +6,7 @@
 #include "input.h"
 #include "output.h"
 
-#include "rawtodigi_alpakaGpu.h"
+#include "rawtodigi_alpaka.h"
 
 namespace {
   constexpr int NLOOPS = 100;
@@ -34,24 +34,18 @@ int countModules(const uint16_t *id, int numElements) {
 }
 
 int main(){
-    
-    std::cout << "ALPAKA" << std::endl;
 
     Input input = read_input();
     std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
     
-    //Selecting the device to execute on
-    // using CpuSerial = CpuSerial<1u>;
-    // using Idx = CpuSerial::Idx;
-    using namespace GPU_CUDA;
+    using namespace ALPAKA_ARCHITECTURE;
 
     DevHost const devHost(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     DevAcc const devAcc(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
     Idx const elements(1);
     Vec const extent(elements);
 
-    // //Creating a queue on the device
-    QueueSync queue(devAcc); //Synchronus
+    Queue queue(devAcc); 
      
     int totaltime = 0;
 
@@ -61,25 +55,31 @@ int main(){
     
     output = std::make_unique<Output>();
 
-    auto const input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent ));
-    auto const input_hBuf(alpaka::mem::buf::alloc<Input, Idx>(devHost, extent));
+    using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, Input, Dim, Idx>;
+    ViewInput input_hBuf(&input, devHost, extent);
 
-    auto* pinput_dBuf(alpaka::mem::view::getPtrNative(input_dBuf));
-    pinput_dBuf = &input;
 
-    auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
-    auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, extent));
+    using BufDevInput = alpaka::mem::buf::Buf<DevAcc, Input, Dim, Idx>;
+    BufDevInput input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent));
 
-    auto* poutput_dBuf(alpaka::mem::view::getPtrNative(output_dBuf));
+    alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
 
-    poutput_dBuf = output.get();
+    // auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+    // auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, extent));
+    
+    using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
+    ViewOutput output_hBuf(output.get(), devHost, extent);
 
-    // std::cout << pinput_dBuf << std::endl;
+    using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
+    BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+
     auto start = std::chrono::high_resolution_clock::now();
 
-    Alpaka::rawtodigi(pinput_dBuf, poutput_dBuf, input.wordCounter, true, true, true, queue);
+    Alpaka::rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
 
-    // //Sync queue?
+    alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, extent);
+
+    alpaka::wait::wait(queue);
 
     auto stop = std::chrono::high_resolution_clock::now();
     
@@ -94,11 +94,6 @@ int main(){
       std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
             << (static_cast<double>(totaltime)/NLOOPS) << " us"
             << std::endl;
-   
-
-
-    
-
 
     return 0;
 }
