@@ -13,7 +13,7 @@ namespace GPU_CUDA {
   using DevAcc = alpaka::dev::Dev<Acc>;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
-  using Queue = alpaka::queue::QueueCudaRtAsync;
+  using Queue = alpaka::queue::QueueCudaRtNonBlocking;
   using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
   using Vec = alpaka::vec::Vec<Dim, Idx>;
 }
@@ -29,7 +29,7 @@ namespace CPU_SERIAL{
   using DevAcc = alpaka::dev::Dev<Acc>;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
-  using Queue = alpaka::queue::QueueCpuSync;
+  using Queue = alpaka::queue::QueueCpuBlocking;
   using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
   using Vec = alpaka::vec::Vec<Dim, Idx>;
 }
@@ -45,7 +45,7 @@ namespace CPU_TBB{
   using DevAcc = alpaka::dev::Dev<Acc>;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
-  using Queue = alpaka::queue::QueueCpuAsync;
+  using Queue = alpaka::queue::QueueCpuNonBlocking;
   using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
   using Vec = alpaka::vec::Vec<Dim, Idx>;
 }
