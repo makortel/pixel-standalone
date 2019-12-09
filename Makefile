@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla kokkos
+TARGETS = naive cuda cupla kokkos oneapi
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -15,6 +15,8 @@ ALPAKA_BASE  := /usr/local/alpaka/alpaka
 ALPAKA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include
 CUPLA_BASE   := /usr/local/alpaka/cupla
 CUPLA_FLAGS  := $(ALPAKA_FLAGS) -I$(CUPLA_BASE)/include
+
+ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
 
 GREEN := '\033[32m'
 RED := '\033[31m'
@@ -159,4 +161,26 @@ kokkos:
 
 kokkos-debug:
 
+endif
+
+ifdef ONEAPI_CXX
+oneapi: main-oneapi
+	@echo -e $(GREEN)oneAPI targets built$(RESET)
+
+oneapi-debug: debug-oneapi
+	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
+
+# oneAPI implementation
+main-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+
+debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+
+else
+oneapi:
+	@echo -e $(RED)Intel oneAPI not found$(RESET), oneAPI targets will not be built
+
+oneapi-debug:
+	@echo -e $(RED)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
 endif

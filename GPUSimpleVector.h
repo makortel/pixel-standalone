@@ -17,6 +17,9 @@
 #include <cuda_to_cupla.hpp>
 #elif defined DIGI_KOKKOS
 #include <Kokkos_Core.hpp>
+#elif defined DIGI_ONEAPI
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #endif
 
 namespace GPU {
@@ -145,7 +148,32 @@ template <class T> struct SimpleVector {
     }
   }
 
-#endif // __CUDACC__
+#elif defined DIGI_ONEAPI
+
+  int push_back(const T &element) {
+    auto previousSize = dpct::atomic_fetch_add(&m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      dpct::atomic_fetch_sub(&m_size, 1);
+      return -1;
+    }
+  }
+
+  template <class... Ts>
+  int emplace_back(Ts &&... args) {
+    auto previousSize = dpct::atomic_fetch_add(&m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      dpct::atomic_fetch_sub(&m_size, 1);
+      return -1;
+    }
+  }
+
+#endif // DIGI_CUPLA || DIGI_KOKKOS || DIGI_CUDA || DIGI_ONEAPI
 
   inline constexpr bool empty() const { return m_size==0;}
   inline constexpr bool full() const { return m_size==m_capacity;}
