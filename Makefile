@@ -6,13 +6,15 @@ CXX := g++
 CXX_FLAGS := -O2 -std=c++14 -ftemplate-depth-512
 CXX_DEBUG := -g
 
-NVCC := /usr/local/cuda/bin/nvcc -ccbin $(CXX)
+CUDA_BASE := /usr/local/cuda
+NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
 NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35
 NVCC_DEBUG := -g -lineinfo
 
-ALPAKA_BASE := /usr/local/alpaka/alpaka
-CUPLA_BASE  := /usr/local/alpaka/cupla
-CUPLA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include -I$(CUPLA_BASE)/include
+ALPAKA_BASE  := /usr/local/alpaka/alpaka
+ALPAKA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include
+CUPLA_BASE   := /usr/local/alpaka/cupla
+CUPLA_FLAGS  := $(ALPAKA_FLAGS) -I$(CUPLA_BASE)/include
 
 GREEN := '\033[32m'
 RED := '\033[31m'
@@ -50,6 +52,7 @@ main-naive: main_naive.cc rawtodigi_naive.h
 debug-naive: main_naive.cc rawtodigi_naive.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE $(CXX_DEBUG) -o $@ main_naive.cc
 
+ifdef CUDA_BASE
 # CUDA implementation
 cuda: main-cuda
 	@echo -e $(GREEN)CUDA targets built$(RESET)
@@ -62,6 +65,14 @@ main-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
 
 debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
+else
+cuda:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), CUDA targets will not be built
+
+cuda-debug:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), CUDA debug targets will not be built
+
+endif
 
 ifdef ALPAKA_BASE
 cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync main-cupla-tbb-seq-async main-cupla-omp2-seq-async
@@ -70,12 +81,22 @@ cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync ma
 cupla-debug: debug-cupla-cuda-async debug-cupla-seq-seq-async debug-cupla-seq-seq-sync debug-cupla-tbb-seq-async debug-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla debug targets built$(RESET)
 
+ifdef CUDA_BASE
 # Alpaka/cupla implementation, with the CUDA GPU async backend
 main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+
+else
+main-cupla-cuda-async:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
+
+debug-cupla-cuda-async:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla debug targets using CUDA will not be built
+
+endif
 
 # Alpaka/cupla implementation, with the serial CPU async backend
 main-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
