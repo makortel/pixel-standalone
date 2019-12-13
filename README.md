@@ -5,18 +5,23 @@ The purpose of this test program is to experiment with various
 
 ## Current implementations
 
-| Implementation | Executable                   | `make` target         | `#ifdef` macros                                                                       |
-|----------------|------------------------------|-----------------------|---------------------------------------------------------------------------------------|
-| Naive CPU      | `main-naive`                 |`naive`                | `DIGI_NAIVE`                                                                          |
-| CUDA           | `main-cuda`                  |`cuda`                 | `DIGI_CUDA`                                                                           |
-| Cupla on CPU   | `main-cupla-seq-seq-async`   |`cupla-seq-seq-async`  | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
-|                | `main-cupla-seq-seq-sync`    |`cupla-seq-seq-sync`   | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
-|                | `main-cupla-tbb-seq-async`   |`cupla-tbb-seq-async`  | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
-|                | `main-cupla-opm2-seq-async`  |`cupla-opm2-seq-async` | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`   |
-| Cupla on GPU   | `main-cupla-cuda-async`      |`cupla-cuda-async`     | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
-| Kokkos on CPU  | `main-kokkos-serial`         |`kokkos-serial`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
-|                | `main-kokkos-openmp`         |`kokkos-openmp`        | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
-| Kokkos on GPU  | `main-kokkos-cuda`           |`kokkos-cuda`          | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
+| Implementation | `make` target         | Executable (also `make` target) | `#ifdef` macros                                                                       |
+|----------------|-----------------------|---------------------------------|---------------------------------------------------------------------------------------|
+| Naive CPU      | `naive`               | `main-naive`                    | `DIGI_NAIVE`                                                                          |
+| CUDA           | `cuda`                | `main-cuda`                     | `DIGI_CUDA`                                                                           |
+| Cupla on CPU   | `cupla`               | `main-cupla-seq-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                |`                      | `main-cupla-seq-seq-sync`       | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                |                       | `main-cupla-tbb-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
+|                |                       | `main-cupla-opm2-seq-async`     | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`   |
+| Cupla on GPU   |                       | `main-cupla-cuda-async`         | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
+| Kokkos on CPU  | `kokkos`              | `main-kokkos-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
+|                |                       | `main-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
+| Kokkos on GPU  |                       | `main-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
+
+
+The per-technology targets build all the executables of that
+technology. For finer-grained compilation, use the executable names
+directly as make targets.
 
 ### Naive CPU
 
