@@ -117,7 +117,7 @@ template <class T> struct SimpleVector {
     }
   }
 
-#elif defined __CUDACC__
+#elif defined DIGI_CUDA && defined __CUDACC__
 
   // thread-safe version of the vector, when used in a CUDA kernel
   __device__
