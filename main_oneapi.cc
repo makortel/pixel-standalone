@@ -48,8 +48,13 @@ int main(int argc, char **argv) {
   int totaltime = 0;
 
   std::unique_ptr<Output> output;
+#ifdef DIGI_ONEAPI_WORKAROUND
+  output = std::make_unique<Output>();
+#endif  // DIGI_ONEAPI_WORKAROUND
   for(int i=0; i<NLOOPS; ++i) {
+#ifndef DIGI_ONEAPI_WORKAROUND
     output = std::make_unique<Output>();
+#endif  // ! DIGI_ONEAPI_WORKAROUND
 
     Input *input_d, *input_h;
     input_d = (Input *) cl::sycl::malloc_device(sizeof(Input), device, ctx);
