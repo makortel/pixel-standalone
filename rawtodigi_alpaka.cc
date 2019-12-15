@@ -3,7 +3,7 @@
 
 #include "rawtodigi_alpaka.h"
 
-// #include "cudaCheck.h"
+
 namespace ALPAKA_ARCHITECTURE{
   namespace Alpaka {
     class Packing {
@@ -383,11 +383,7 @@ namespace ALPAKA_ARCHITECTURE{
       uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const elemDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-      // reinterpret_cast<TIdx>(wordCounter);
 
-      // std::cout << gridDimension << std::endl;
-      // std::cout << blco[0] << std::endl;
-      // int32_t first = (threadIdx.x + blockIdx.x * blockDim.x) * elemDim.x;
       int32_t first = (blockThreadIdx + gridBlockIdx * blockDimension) * elemDimension;
       for (uint32_t iloop(first); iloop < wordCounter; iloop += gridDimension * blockDimension* elemDimension) {
         int32_t last = std::min(iloop + elemDimension, wordCounter);
@@ -498,25 +494,19 @@ namespace ALPAKA_ARCHITECTURE{
     
     void rawtodigi(const Input *input_d, Output *output_d, 
                   const uint32_t wordCounter,
-                  bool useQualityInfo, bool includeErrors, bool debug, QueueSync queue) {
-      
-      // using CpuSerial = CpuSerial<1u>;
-      // using Vec = CpuSerial::Vec;
-      // using Idx = CpuSerial::Idx;              
+                  bool useQualityInfo, bool includeErrors, bool debug, Queue queue) {
+                  
       Vec const elementsPerThread(Vec::all(static_cast<Idx>(wordCounter)));
       Vec const threadsPerBlock(Vec::all(static_cast<Idx>(1)));
       Vec const blocksPerGrid(Vec::all(static_cast<Idx>(1)));
       //                       (wordCounter + threadsPerBlock[0] - 1) / threadsPerBlock[0])
       // ));
 
-      // using WorkDiv = CpuSerial::WorkDiv;
-
       WorkDiv const workDiv(
       blocksPerGrid,
       threadsPerBlock,
       elementsPerThread);
     
-                      
       rawtodigi_kernel<Idx> kernel;
 
       auto const taskRawToDigiKernel(alpaka::kernel::createTaskKernel<Acc>(
@@ -531,8 +521,6 @@ namespace ALPAKA_ARCHITECTURE{
 
       alpaka::queue::enqueue(queue, taskRawToDigiKernel);
 
-      
-        
     }     
     
   }; // end namespace alpaka
