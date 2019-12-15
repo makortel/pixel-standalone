@@ -19,7 +19,6 @@ CUPLA_FLAGS  := $(ALPAKA_FLAGS) -I$(CUPLA_BASE)/include
 GREEN := '\033[32m'
 RED := '\033[31m'
 RESET := '\033[0m'
-
 all: $(TARGETS)
 
 debug: $(TARGETS:%=debug-%)
@@ -108,7 +107,6 @@ ifdef CUDA_BASE
 # Alpaka/cupla implementation, with the CUDA GPU async backend
 cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync main-cupla-tbb-seq-async main-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla targets built$(RESET)
-
 cupla-debug: debug-cupla-cuda-async debug-cupla-seq-seq-async debug-cupla-seq-seq-sync debug-cupla-tbb-seq-async debug-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla debug targets built$(RESET)
 
@@ -169,8 +167,8 @@ ifdef KOKKOS_BASE
 # Kokkos implementation, serial backend
 kokkos: main-kokkos-serial
 
-# debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
+main-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
 
 # Kokkos implementation, OpenMP backend
 kokkos: main-kokkos-openmp
@@ -180,27 +178,28 @@ kokkos: main-kokkos-openmp
 # Kokkos implementation, CUDA backend
 kokkos-cuda: main-kokkos-cuda
 kokkos: main-kokkos-cuda
+debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
-# ifdef KOKKOS_BASE
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
-# # Kokkos implementation, serial backend
-# kokkos-serial: main-kokkos-serial
+ifdef KOKKOS_BASE
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+# Kokkos implementation, serial backend
+kokkos-serial: main-kokkos-serial
 
-# main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
-# 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
+	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
-# # Kokkos implementation, OpenMP backend
-# kokkos-openmp: main-kokkos-openmp
-
-# main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
-# 	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+# Kokkos implementation, OpenMP backend
+kokkos-openmp: main-kokkos-openmp
 
 else
 kokkos:
 	@echo -e $(RED)Kokkos not found$(RESET), Kokkos targets will not be built
+else
+kokkos-serial:
 
-# kokkos-openmp:
+kokkos-openmp:
 
-# kokkos-cuda:
+kokkos-cuda:
 
-# endif
+endif
