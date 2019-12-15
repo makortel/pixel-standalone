@@ -76,6 +76,7 @@ ifdef ALPAKA_BASE
 #Compile-time device choice implementation
 alpakaCT: main-alpaka-ser main-alpaka-tbb main-alpaka-gpu
 	@echo -e $(GREEN)ALPAKA, compile-time version, targets built $(RESET)
+
 main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
 	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_SERIAL -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
 main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
@@ -87,6 +88,7 @@ main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
 #Run-time device choice implementation
 alpakaRT: main-alpaka-all 
 	@echo -e $(GREEN)ALPAKA, run-time version, targets built $(RESET) rm *.o
+
 main_alpakaAll.o: main_alpakaAll.cc
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ -c $<
 
@@ -113,6 +115,15 @@ main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
 debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+else
+main-cupla-cuda-async:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
+
+debug-cupla-cuda-async:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla debug targets using CUDA will not be built
+
+endif
+
 else
 main-cupla-cuda-async:
 	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
