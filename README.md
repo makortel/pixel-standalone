@@ -17,6 +17,7 @@ The purpose of this test program is to experiment with various
 | Kokkos on CPU  | `kokkos`              | `main-kokkos-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
 |                |                       | `main-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
 | Kokkos on GPU  |                       | `main-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
+| Intel oneAPI   | `oneapi`              | `main-oneapi`                   | `DIGI_ONEAPI`, `DIGI_ONEAPI_WORKAROUND`                                               |
 
 
 The per-technology targets build all the executables of that
@@ -66,6 +67,12 @@ make install
 
 In principle the following fix is needed, unless `$KOKKOS_SRC` is kept alive as well
 * Edit `$KOKKOS_BASE/Makefile.kokkos` to fix the path to `nvcc_wrapper` to point to `$KOKKOS_BASE` instead of `$KOKKOS_SRC`
+
+### Intel oneAPI
+
+The beta version of Intel oneAPI can be obtained from https://software.intel.com/en-us/oneapi .
+
+The tests programs choose an OpenCL device at runtime using the `cl::sycl::default_selector`.
 
 ## How to add a new implementation?
 

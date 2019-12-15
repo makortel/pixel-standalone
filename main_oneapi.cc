@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
                       input.wordCounter,
                       true, true, false, queue);
 
-    queue.memcpy((void*)(output_h), (void*)(output_d), sizeof(Output));
+    queue.memcpy((void*)output_h, (void*)output_d, sizeof(Output));
     queue.wait();
     auto stop = std::chrono::high_resolution_clock::now();
 
