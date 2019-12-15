@@ -10,14 +10,11 @@
 
 int main(){
 
+    Alpaka::CPU_SERIAL::rawtodigi();
 
-    CPU_SERIAL::Alpaka::rawtodigi();
-
-    CPU_TBB::Alpaka::rawtodigi();
-
-    GPU_CUDA::Alpaka::rawtodigi();
-
+    // Alpaka::CPU_TBB::rawtodigi();
     
+    // Alpaka::GPU_CUDA::rawtodigi();
 
     return 0;
 }

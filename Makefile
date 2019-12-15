@@ -71,7 +71,6 @@ cuda-debug:
 	@echo -e $(RED)NVIDIA CUDA not found$(RESET), CUDA debug targets will not be built
 
 endif	
-
 ifdef ALPAKA_BASE
 # Alpaka/cupla implementation, with the CUDA GPU async backend
 #Compile-time device choice implementation
@@ -84,7 +83,6 @@ main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
 
 # main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
 # 	$(NVCC) -x cu $(NVCC_FLAGS) -DALPAKA_ACC_GPU_CUDA_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=GPU_CUDA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
-
 #Run-time device choice implementation
 alpakaRT: main-alpaka-all 
 	@echo -e $(GREEN)ALPAKA, run-time version, targets built $(RESET) rm *.o
@@ -114,7 +112,6 @@ main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
 debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
-
 else
 main-cupla-cuda-async:
 	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
@@ -182,24 +179,20 @@ debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 ifdef KOKKOS_BASE
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
 # Kokkos implementation, serial backend
-kokkos-serial: main-kokkos-serial
+kokkos: main-kokkos-serial
 
 main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 # Kokkos implementation, OpenMP backend
-kokkos-openmp: main-kokkos-openmp
+kokkos: main-kokkos-openmp
 
 else
 kokkos:
 	@echo -e $(RED)Kokkos not found$(RESET), Kokkos targets will not be built
 else
-kokkos-serial:
-
-kokkos-openmp:
-
-kokkos-cuda:
+kokkos:
+	@echo -e $(RED)Kokkos not found$(RESET), Kokkos targets will not be built
 
 endif

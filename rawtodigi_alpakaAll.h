@@ -1,4 +1,3 @@
-
 #ifndef RAWTODIGI_ALPAKAALL_h
 #define RAWTODIGI_ALPAKAALL_h
 
@@ -31,20 +30,20 @@ namespace {
   }  
 }
 
-namespace CPU_SERIAL {
-  namespace Alpaka{
+namespace Alpaka {
+  namespace CPU_SERIAL{
   void rawtodigi();
   }
 }
 
-namespace CPU_TBB{
-    namespace Alpaka{
+namespace Alpaka{
+    namespace CPU_TBB{
       void rawtodigi();
     }
 }
 
-namespace GPU_CUDA{
-    namespace Alpaka{
+namespace Alpaka{
+    namespace GPU_CUDA{
       void rawtodigi();
     }
 }
