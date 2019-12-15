@@ -53,43 +53,41 @@ int main(){
 
     for(int i=0; i < NLOOPS; i++){
     
-    output = std::make_unique<Output>();
+      output = std::make_unique<Output>();
 
-    using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, Input, Dim, Idx>;
-    ViewInput input_hBuf(&input, devHost, extent);
+      using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, Input, Dim, Idx>;
+      ViewInput input_hBuf(&input, devHost, extent);
 
 
-    using BufDevInput = alpaka::mem::buf::Buf<DevAcc, Input, Dim, Idx>;
-    BufDevInput input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent));
+      using BufDevInput = alpaka::mem::buf::Buf<DevAcc, Input, Dim, Idx>;
+      BufDevInput input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent));
 
-    alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
+      alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
 
-    // auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
-    // auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, extent));
-    
-    using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
-    ViewOutput output_hBuf(output.get(), devHost, extent);
+      // auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+      // auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, extent));
+      
+      using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
+      ViewOutput output_hBuf(output.get(), devHost, extent);
 
-    using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
-    BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+      using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
+      BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
 
-    auto start = std::chrono::high_resolution_clock::now();
+      auto start = std::chrono::high_resolution_clock::now();
 
-    Alpaka::rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
+      Alpaka::rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
 
-    alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, extent);
+      alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, extent);
 
-    alpaka::wait::wait(queue);
+      alpaka::wait::wait(queue);
 
-    auto stop = std::chrono::high_resolution_clock::now();
-    
-    auto diff = stop - start;
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-    totaltime += time;
+      auto stop = std::chrono::high_resolution_clock::now();
+      
+      auto diff = stop - start;
+      auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      totaltime += time;
     
     }//end for i to NLOOPS
-
-  
 
       std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
             << (static_cast<double>(totaltime)/NLOOPS) << " us"

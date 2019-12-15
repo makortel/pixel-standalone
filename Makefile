@@ -83,6 +83,7 @@ main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
 
 # main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
 # 	$(NVCC) -x cu $(NVCC_FLAGS) -DALPAKA_ACC_GPU_CUDA_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=GPU_CUDA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
+
 #Run-time device choice implementation
 alpakaRT: main-alpaka-all 
 	@echo -e $(GREEN)ALPAKA, run-time version, targets built $(RESET) rm *.o
