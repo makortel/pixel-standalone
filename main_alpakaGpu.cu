@@ -6,13 +6,6 @@
 #include "input.h"
 #include "output.h"
 
-
-/* Do NOT include other headers that use CUDA runtime functions or variables
- * before this include, because cupla renames CUDA host functions and device
- * built-in variables using macros and macro functions.
- * Do NOT include other specific includes such as `<cuda.h>`, etc.
- */
-
 #include "rawtodigi_alpakaGpu.h"
 
 namespace {
@@ -48,44 +41,45 @@ int main(){
     std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
     
     //Selecting the device to execute on
-    using GpuCuda = GpuCuda<1u>;
-    using Idx = GpuCuda::Idx;
+    // using CpuSerial = CpuSerial<1u>;
+    // using Idx = CpuSerial::Idx;
+    using namespace GPU_CUDA;
 
-    GpuCuda::DevHost const devHost(alpaka::pltf::getDevByIdx<GpuCuda::PltfHost>(0u));
-    GpuCuda::DevAcc const devAcc(alpaka::pltf::getDevByIdx<GpuCuda::PltfAcc>(0u));
+    DevHost const devHost(alpaka::pltf::getDevByIdx<PltfHost>(0u));
+    DevAcc const devAcc(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
+    Idx const elements(1);
+    Vec const extent(elements);
 
-    //Creating a queue on the device
-    GpuCuda::QueueAsync queue(devAcc); //Synchronus
+    // //Creating a queue on the device
+    QueueSync queue(devAcc); //Synchronus
      
     int totaltime = 0;
 
     std::unique_ptr<Output> output;
 
-    for(int i=0; i < 1; i++){
+    for(int i=0; i < NLOOPS; i++){
     
     output = std::make_unique<Output>();
-    // std::cout << sizeof(input) << std::endl;
 
-    //******** error allocating Input object on the device! *********
-    auto const input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, sizeof(Input)));
-    // auto const input_hBuf(alpaka::mem::buf::alloc<Input, Idx>(devHost, sizeof(Input)));
+    auto const input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent ));
+    auto const input_hBuf(alpaka::mem::buf::alloc<Input, Idx>(devHost, extent));
 
-    // auto* pinput_dBuf(alpaka::mem::view::getPtrNative(input_dBuf));
-    // pinput_dBuf = &input;
+    auto* pinput_dBuf(alpaka::mem::view::getPtrNative(input_dBuf));
+    pinput_dBuf = &input;
 
-    // auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, sizeof(Output)));
-    // auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, sizeof(Output)));
+    auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+    auto const output_hBuf(alpaka::mem::buf::alloc<Output, Idx>(devHost, extent));
 
-    // auto* poutput_dBuf(alpaka::mem::view::getPtrNative(output_dBuf));
+    auto* poutput_dBuf(alpaka::mem::view::getPtrNative(output_dBuf));
 
-    // poutput_dBuf = output.get();
+    poutput_dBuf = output.get();
 
     // std::cout << pinput_dBuf << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
 
-    // alpaka::rawtodigi(pinput_dBuf, poutput_dBuf, input.wordCounter, false, false, false, queue);
+    Alpaka::rawtodigi(pinput_dBuf, poutput_dBuf, input.wordCounter, true, true, true, queue);
 
-    //Sync queue?
+    // //Sync queue?
 
     auto stop = std::chrono::high_resolution_clock::now();
     
@@ -97,9 +91,9 @@ int main(){
 
   
 
-      // std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-      //       << (static_cast<double>(totaltime)/NLOOPS) << " us"
-      //       << std::endl;
+      std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
+            << (static_cast<double>(totaltime)/NLOOPS) << " us"
+            << std::endl;
    
 
 

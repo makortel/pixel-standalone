@@ -7,9 +7,17 @@ BOOST_BASE := /data/cmssw/slc7_amd64_gcc820/external/boost/1.67.0-pafccj/
 CXX := g++
 CXX_FLAGS := -O2 -std=c++14 -ftemplate-depth-512 -I$(BOOST_BASE)/include 
 CXX_DEBUG := -g
+<<<<<<< HEAD
 CUDA_BASE := /usr/local/cuda
 NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
 NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_75,code=sm_75 -I$(BOOST_BASE)/include
+=======
+
+
+
+NVCC := /data/cmssw/slc7_amd64_gcc820/external/cuda/10.1.105-pafccj2/bin/nvcc -ccbin $(CXX)
+NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w -lineinfo -DALPAKA_CUDA_ARCH=60:70:75 -I/data/cmssw/slc7_amd64_gcc820/external/boost/1.67.0-pafccj/include/ -I$(TBB_ROOT) -L$(TBB_ROOT)/lib
+>>>>>>> 9d91af6... Re-structured code implementation, need to fix mem allocation
 NVCC_DEBUG := -g -lineinfo
 ALPAKA_BASE  := /afs/cern.ch/work/w/wredjeb/private/external/cupla/alpaka
 ALPAKA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include
@@ -82,7 +90,6 @@ alpakaCT: main-alpaka-ser main-alpaka-tbb main-alpaka-gpu
 
 main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
 	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_SERIAL -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
-
 main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
 	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_TBB -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -I$(TBB_BASE) -L$(TBB_BASE)/lib  -o $@ $^ -ltbb -lrt -pthread 
 
@@ -167,7 +174,6 @@ debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 else
 cupla:
 	@echo $(RED)Alpaka and Cupla not found$(RESET), Alpaka and Cupla targets will not be built
-
 endif
 
 ifdef KOKKOS_BASE

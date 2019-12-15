@@ -1,13 +1,13 @@
-#ifndef RAWTODIGI_ALPAKATBB_H
-#define RAWTODIGI_ALPAKATBB_H
+#ifndef RAWTODIGI_ALPAKASER_H
+#define RAWTODIGI_ALPAKASER_H
 
-#define ALPAKA_ARCHITECTURE CPU_TBB
+#define ALPAKA_ARCHITECTURE CPU_SERIAL
 
-#include "alpakaConfigTBB.h"
+#include "alpakaConfigSer.h"
 
-namespace CPU_TBB{
+namespace CPU_SERIAL{
 
-    using Accelerator = CpuParallelTBB<1u>;
+    using Accelerator = CpuSerial<1u>;
     using Acc = Accelerator::Acc;
     using Dim = Accelerator::Dim;
     using Idx = Accelerator::Idx;
