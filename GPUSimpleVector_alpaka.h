@@ -1,23 +1,15 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_h
-#define HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_h
+#ifndef HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_alpaka_h
+#define HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_alpaka_h
 
 //  author: Felice Pantaleo, CERN, 2018
 
 #include <type_traits>
 #include <utility>
 
-#if defined DIGI_CUDA
-#include <cuda.h>
-#elif defined DIGI_CUPLA
-/* Do NOT include other headers that use CUDA runtime functions or variables
- * before this include, because cupla renames CUDA host functions and device
- * built-in variables using macros and macro functions.
- * Do NOT include other specific includes such as `<cuda.h>`, etc.
- */
-#include <cuda_to_cupla.hpp>
-#elif defined DIGI_KOKKOS
-#include <Kokkos_Core.hpp>
-#endif
+// #include "alpakaConfigSer.h"
+// #include "alpakaConfigTBB.h"
+// #include "alpakaConfigGpu.h"
+#include <alpaka/alpaka.hpp>
 
 namespace GPU {
 template <class T> struct SimpleVector {
@@ -62,17 +54,16 @@ template <class T> struct SimpleVector {
       return T(); //undefined behaviour
   }
 
-#ifdef DIGI_CUPLA
 
   template <typename T_Acc>
   ALPAKA_FN_ACC
   int push_back(T_Acc const& acc, const T &element) {
-    auto previousSize = atomicAdd(&m_size, 1);
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
     if (previousSize < m_capacity) {
       m_data[previousSize] = element;
       return previousSize;
     } else {
-      atomicSub(&m_size, 1);
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
       return -1;
     }
   }
@@ -80,72 +71,15 @@ template <class T> struct SimpleVector {
   template <typename T_Acc, class... Ts>
   ALPAKA_FN_ACC
   int emplace_back(T_Acc const& acc, Ts &&... args) {
-    auto previousSize = atomicAdd(&m_size, 1);
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
     if (previousSize < m_capacity) {
       (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
       return previousSize;
     } else {
-      atomicSub(&m_size, 1);
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
       return -1;
     }
   }
-
-#elif defined DIGI_KOKKOS
-
-  KOKKOS_INLINE_FUNCTION
-  int push_back(const T &element) {
-    auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
-    if (previousSize < m_capacity) {
-      m_data[previousSize] = element;
-      return previousSize;
-    } else {
-      Kokkos::atomic_sub(&m_size, 1);
-      return -1;
-    }
-  }
-
-  template <class... Ts>
-  KOKKOS_INLINE_FUNCTION
-  int emplace_back(Ts &&... args) {
-    auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
-    if (previousSize < m_capacity) {
-      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
-      return previousSize;
-    } else {
-      Kokkos::atomic_sub(&m_size, 1);
-      return -1;
-    }
-  }
-
-#elif defined DIGI_CUDA && defined __CUDACC__
-
-  // thread-safe version of the vector, when used in a CUDA kernel
-  __device__
-  int push_back(const T &element) {
-    auto previousSize = atomicAdd(&m_size, 1);
-    if (previousSize < m_capacity) {
-      m_data[previousSize] = element;
-      return previousSize;
-    } else {
-      atomicSub(&m_size, 1);
-      return -1;
-    }
-  }
-
-  template <class... Ts>
-  __device__
-  int emplace_back(Ts &&... args) {
-    auto previousSize = atomicAdd(&m_size, 1);
-    if (previousSize < m_capacity) {
-      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
-      return previousSize;
-    } else {
-      atomicSub(&m_size, 1);
-      return -1;
-    }
-  }
-
-#endif // __CUDACC__
 
   inline constexpr bool empty() const { return m_size==0;}
   inline constexpr bool full() const { return m_size==m_capacity;}
@@ -183,4 +117,4 @@ private:
 
 } // namespace GPU
 
-#endif // HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_h
+#endif // HeterogeneousCore_CUDAUtilities_interface_GPUSimpleVector_alpaka_h
