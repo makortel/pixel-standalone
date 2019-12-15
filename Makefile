@@ -46,9 +46,8 @@ naive: main-naive
 
 naive-debug: debug-naive
 	@echo -e $(GREEN)naive debug targets built$(RESET)
-
-main-naive: main_naive.cc rawtodigi_naive.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
+# main-naive: main_naive.cc rawtodigi_naive.h
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
 
 debug-naive: main_naive.cc rawtodigi_naive.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE $(CXX_DEBUG) -o $@ main_naive.cc
@@ -84,13 +83,12 @@ main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
 main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
 	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=CPU_TBB -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -I$(TBB_BASE) -L$(TBB_BASE)/lib  -o $@ $^ -ltbb -lrt -pthread 
 
-main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
-	$(NVCC) -x cu $(NVCC_FLAGS) -DALPAKA_ACC_GPU_CUDA_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=GPU_CUDA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
+# main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
+# 	$(NVCC) -x cu $(NVCC_FLAGS) -DALPAKA_ACC_GPU_CUDA_ENABLED -DDIGI_ALPAKA -DALPAKA_ARCHITECTURE=GPU_CUDA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ $^
 
 #Run-time device choice implementation
 alpakaRT: main-alpaka-all 
 	@echo -e $(GREEN)ALPAKA, run-time version, targets built $(RESET) rm *.o
-
 main_alpakaAll.o: main_alpakaAll.cc
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ -c $<
 
@@ -171,24 +169,38 @@ ifdef KOKKOS_BASE
 # Kokkos implementation, serial backend
 kokkos: main-kokkos-serial
 
-main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+# debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
 
 # Kokkos implementation, OpenMP backend
 kokkos: main-kokkos-openmp
-
-main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+# main-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "$(CUPLA_BASE)/include/cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 # Kokkos implementation, CUDA backend
 kokkos-cuda: main-kokkos-cuda
 kokkos: main-kokkos-cuda
 
-main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+# ifdef KOKKOS_BASE
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -I$(ALPAKA_BASE)/include/alpaka/ $(CUPLA_FLAGS) -o $@ main_alpakaSerial.cc rawtodigi_alpakaSer.cc
+# # Kokkos implementation, serial backend
+# kokkos-serial: main-kokkos-serial
+
+# main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
+# 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+
+# # Kokkos implementation, OpenMP backend
+# kokkos-openmp: main-kokkos-openmp
+
+# main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
+# 	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 else
 kokkos:
 	@echo -e $(RED)Kokkos not found$(RESET), Kokkos targets will not be built
 
-endif
+# kokkos-openmp:
+
+# kokkos-cuda:
+
+# endif
