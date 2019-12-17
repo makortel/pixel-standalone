@@ -4,8 +4,8 @@
 #include "rawtodigi_alpaka.h"
 
 
-namespace ALPAKA_ARCHITECTURE{
-  namespace Alpaka {
+namespace Alpaka{
+  namespace ALPAKA_ARCHITECTURE{
     class Packing {
     public:
       using PackedDigiType = uint32_t;

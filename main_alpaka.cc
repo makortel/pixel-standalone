@@ -38,7 +38,7 @@ int main(){
     Input input = read_input();
     std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
     
-    using namespace ALPAKA_ARCHITECTURE;
+    using namespace Alpaka::ALPAKA_ARCHITECTURE;
 
     DevHost const devHost(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     DevAcc const devAcc(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
@@ -75,7 +75,7 @@ int main(){
 
       auto start = std::chrono::high_resolution_clock::now();
 
-      Alpaka::rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
+      rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
 
       alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, extent);
 

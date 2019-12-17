@@ -7,14 +7,14 @@
 // #include "output.h"
 
 #include "rawtodigi_alpakaAll.h"
-
+using namespace Alpaka;
 int main(){
 
-    Alpaka::CPU_SERIAL::rawtodigi();
+    CPU_SERIAL::rawtodigi();
 
-    Alpaka::CPU_TBB::rawtodigi();
+    CPU_TBB::rawtodigi();
     
-    Alpaka::GPU_CUDA::rawtodigi();
+    GPU_CUDA::rawtodigi();
 
     return 0;
 }
