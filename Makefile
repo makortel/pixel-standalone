@@ -2,9 +2,6 @@ TARGETS = naive cuda cupla kokkos oneapi alpakaCT alpakaRT
 
 .PHONY: all debug clean $(TARGETS)
 
-BOOST_BASE := /data/cmssw/slc7_amd64_gcc820/external/boost/1.67.0-pafccj/
-TBB_BASE := /data/cmssw/slc7_amd64_gcc820/external/tbb/2019_U3-pafccj
-
 CXX := g++
 CXX_FLAGS := -O2 -std=c++14 -ftemplate-depth-512 
 CXX_DEBUG := -g
@@ -223,4 +220,3 @@ oneapi-debug:
 endif
 
 endif
-
