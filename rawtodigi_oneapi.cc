@@ -12,7 +12,7 @@ namespace oneapi {
     using PackedDigiType = uint32_t;
 
     // Constructor: pre-computes masks and shifts from field widths
-     
+
     inline
     constexpr Packing(unsigned int row_w, unsigned int column_w,
                       unsigned int time_w, unsigned int adc_w) :
@@ -53,14 +53,14 @@ namespace oneapi {
     uint32_t  max_adc;
   };
 
-   
+
   inline
   constexpr Packing packing() {
     return Packing(11, 11, 0, 10);
   }
 
 
-   
+
   inline
   uint32_t pack(uint32_t row, uint32_t col, uint32_t adc) {
     constexpr Packing thePacking = packing();
@@ -72,30 +72,30 @@ namespace oneapi {
   }
 
 
-   
+
   uint32_t getLink(uint32_t ww)  {
     return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
   }
 
 
-   
+
   uint32_t getRoc(uint32_t ww) {
     return ((ww >> pixelgpudetails::ROC_shift ) & pixelgpudetails::ROC_mask);
   }
 
 
-   
+
   uint32_t getADC(uint32_t ww) {
     return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask);
   }
 
 
-   
+
   bool isBarrel(uint32_t rawId) {
     return (1==((rawId>>25)&0x7));
   }
 
-   
+
   bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol)
   {
     constexpr uint32_t numRowsInRoc = 80;
@@ -105,20 +105,20 @@ namespace oneapi {
     return ((rocRow < numRowsInRoc) & (rocCol < numColsInRoc));
   }
 
-   
+
   bool dcolIsValid(uint32_t dcol, uint32_t pxid)
   {
     return ((dcol < 26) &  (2 <= pxid) & (pxid < 162));
   }
 
-   
+
   pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU * cablingMap, uint8_t fed, uint32_t link, uint32_t roc) {
     uint32_t index = fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link-1) * pixelgpudetails::MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = { cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index] };
     return detId;
   }
 
-   
+
   pixelgpudetails::Pixel frameConversion(bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
 
     int slopeRow  = 0, slopeCol = 0;
@@ -196,7 +196,7 @@ namespace oneapi {
     return global;
   }
 
-   
+
   uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug, cl::sycl::stream out)
   {
 #ifndef DIGI_ONEAPI_WORKAROUND
@@ -230,7 +230,7 @@ namespace oneapi {
     return 0;
   }
 
-   
+
   uint32_t getErrRawID(uint8_t fedId, uint32_t errWord, uint32_t errorType, const SiPixelFedCablingMapGPU *cablingMap, bool debug, cl::sycl::stream out)
   {
     uint32_t rID = 0xffffffff;
@@ -293,8 +293,8 @@ namespace oneapi {
 
     return rID;
   }
-  
-   
+
+
   uint8_t checkROC(uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug, cl::sycl::stream out)
   {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
@@ -359,9 +359,9 @@ namespace oneapi {
     return errorFound ? errorType : 0;
   }
 
-  
+
   void rawtodigi_kernel(const Input *input, Output *output,
-      bool useQualityInfo, bool includeErrors, bool debug, cl::sycl::nd_item<3> item_ct1, cl::sycl::stream out)
+      bool useQualityInfo, bool includeErrors, bool debug, cl::sycl::nd_item<1> item, cl::sycl::stream out)
   {
     const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
     const uint32_t wordCounter = input->wordCounter;
@@ -375,9 +375,7 @@ namespace oneapi {
     uint16_t* moduleId = output->moduleInd;
     GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
 
-
-    int32_t first = item_ct1.get_local_id(2) + item_ct1.get_group(2)*item_ct1.get_local_range().get(2);
-    for (int32_t iloop=first, nend=wordCounter; iloop<nend; iloop+=item_ct1.get_local_range().get(2)*item_ct1.get_group_range(2)) { 
+    for (int32_t iloop = item.get_global_id(0); iloop < wordCounter; iloop += item.get_global_range(0)) {
 
         auto gIndex  = iloop;
         xx[gIndex]   = 0;
@@ -481,29 +479,25 @@ namespace oneapi {
 
   } // end of Raw to Digi kernel
 
-  void rawtodigi(const Input *input_d, Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo, bool includeErrors, bool debug, cl::sycl::queue & queue) try {
-    const int threadsPerBlock = 512;
-    const int blocks = (wordCounter + threadsPerBlock-1) /threadsPerBlock; // fill it all
+  class rawtodigi_kernel_name;
 
-    {
-      queue.submit(
-        [&](cl::sycl::handler &cgh) {
-          cl::sycl::stream out(64 * 1024, 80, cgh);
-          auto dpct_global_range = cl::sycl::range<3>(blocks, 1, 1) * cl::sycl::range<3>(threadsPerBlock, 1, 1);
-          auto dpct_local_range = cl::sycl::range<3>(threadsPerBlock, 1, 1);
-          cgh.parallel_for<dpct_kernel_name<class rawtodigi_kernel_5b0d6a>>(
-            cl::sycl::nd_range<3>(cl::sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)), cl::sycl::range<3>(dpct_local_range.get(2), dpct_local_range.get(1), dpct_local_range.get(0))),
-            [=](cl::sycl::nd_item<3> item_ct1) {
-              rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, debug, item_ct1, out);
-            });
+  void rawtodigi(const Input *input_d, Output *output_d, const uint32_t wordCounter,
+                 bool useQualityInfo, bool includeErrors, bool debug, cl::sycl::queue queue) try {
+    const uint32_t blockSize = 512;
+    const uint32_t blocks = (wordCounter + blockSize - 1) / blockSize;
+    const uint32_t threads = blocks * blockSize;
+    queue.submit([&](cl::sycl::handler &cgh) {
+      cl::sycl::stream out(64 * 1024, 80, cgh);
+      cgh.parallel_for<rawtodigi_kernel_name>(
+        cl::sycl::nd_range<1>{cl::sycl::range<1>{threads}, cl::sycl::range<1>{blockSize}},
+        [=](cl::sycl::nd_item<1> item) {
+            rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, debug, item, out);
+          });
         });
-    }
   }
-catch (cl::sycl::exception const &exc) {
-  std::cerr << exc.what() << "EOE at line " << __LINE__ << std::endl;
-  std::exit(1);
-}     
-  
+  catch (cl::sycl::exception const &exc) {
+    std::cerr << exc.what() << "EOE at line " << __LINE__ << std::endl;
+    std::exit(1);
+  }
+
 } // end namespace oneapi
