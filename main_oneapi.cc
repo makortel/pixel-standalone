@@ -15,12 +15,53 @@ namespace {
   constexpr int NLOOPS = 100;
 }
 
+enum DeviceType {
+  default_device = 0,
+  host_device,
+  cpu_device,
+  gpu_device
+};
+
 int main(int argc, char **argv) {
-  cl::sycl::default_selector device_selector;
-  cl::sycl::device device{device_selector};
+  DeviceType device_type = default_device;
+  if (argc > 1) {
+    if (std::strcmp(argv[1], "--host") == 0)
+      device_type = host_device;
+    else if (std::strcmp(argv[1], "--cpu") == 0)
+      device_type = cpu_device;
+    else if (std::strcmp(argv[1], "--gpu") == 0)
+      device_type = gpu_device;
+    else
+      std::cout << "Ignoring unknown option " << argv[1] << std::endl;
+  }
+
+  cl::sycl::device device;
+  switch(device_type) {
+    case host_device: {
+      cl::sycl::host_selector device_selector;
+      device = cl::sycl::device{device_selector};
+      break;
+    }
+    case cpu_device: {
+      cl::sycl::cpu_selector device_selector;
+      device = cl::sycl::device{device_selector};
+      break;
+    }
+    case gpu_device: {
+      cl::sycl::gpu_selector device_selector;
+      device = cl::sycl::device{device_selector};
+      break;
+    }
+    case default_device:
+    default: {
+      cl::sycl::default_selector device_selector;
+      device = cl::sycl::device{device_selector};
+    }
+  }
+
   cl::sycl::context ctx{device};
   cl::sycl::queue queue{device};
-  std::cout << "Running on SYCL device " << device.get_info<cl::sycl::info::device::name>() << std::endl;
+  std::cout << "Running on SYCL device " << device.get_info<cl::sycl::info::device::name>() << ", driver version " << device.get_info<cl::sycl::info::device::driver_version>() << std::endl;
 
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
