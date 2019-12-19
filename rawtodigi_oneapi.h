@@ -1,5 +1,5 @@
-#ifndef RAWTODIGI_CUDA_H
-#define RAWTODIGI_CUDA_H
+#ifndef RAWTODIGI_ONEAPI_H
+#define RAWTODIGI_ONEAPI_H
 
 #include <CL/sycl.hpp>
 
@@ -14,4 +14,4 @@ namespace oneapi {
                  bool useQualityInfo, bool includeErrors, bool debug, cl::sycl::queue queue);
 }
 
-#endif
+#endif  // RAWTODIGI_ONEAPI_H
