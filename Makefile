@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla kokkos oneapi
+TARGETS = naive cuda alpaka cupla kokkos oneapi
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -106,6 +106,48 @@ cuda-debug:
 endif
 
 ifdef ALPAKA_BASE
+alpaka: main-alpaka-ser main-alpaka-tbb main-alpaka-gpu main-alpaka-all
+	@echo -e $(GREEN)Alpaka targets built $(RESET)
+
+# Alpaka implementation with compile-time device choice
+main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DALPAKA_ARCHITECTURE=CPU_SERIAL $(ALPAKA_FLAGS) -o $@ $^
+
+main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DALPAKA_ARCHITECTURE=CPU_TBB $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -o $@ $^ $(TBB_LD_FLAGS) -pthread
+
+ifdef CUDA_BASE
+main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
+	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED -DALPAKA_ARCHITECTURE=GPU_CUDA $(ALPAKA_FLAGS) -o $@ $^
+
+else
+main-alpaka-gpu:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
+
+endif
+
+# Alpaka implementation with run-time device choice
+main_alpakaAll.o: main_alpakaAll.cc
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpakaSER.o: rawtodigi_alpakaCPU.cc
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DSERIAL $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpakaTBB.o: rawtodigi_alpakaCPU.cc
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DTBB $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpakaGPU.o: rawtodigi_alpakaGPU.cu
+	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
+
+main-alpaka-all: main_alpakaAll.o rawtodigi_alpakaSER.o rawtodigi_alpakaTBB.o rawtodigi_alpakaGPU.o
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread $(TBB_LD_FLAGS) -o $@ $+
+else
+alpaka:
+	@echo -e $(RED)Alpaka not found$(RESET), Alpaka targets will not be built
+
+endif
+
+ifdef CUPLA_BASE
 cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync main-cupla-tbb-seq-async main-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla targets built$(RESET)
 
@@ -159,10 +201,10 @@ debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 else
 cupla:
-	@echo -e $(RED)Alpaka and Cupla not found$(RESET), Alpaka and Cupla targets will not be built
+	@echo -e $(RED)Cupla not found$(RESET), Cupla targets will not be built
 
 cupla-debug:
-	@echo -e $(RED)Alpaka and Cupla not found$(RESET), Alpaka and Cupla debug targets will not be built
+	@echo -e $(RED)Cupla not found$(RESET), Cupla debug targets will not be built
 
 endif
 

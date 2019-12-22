@@ -1,6 +1,8 @@
 #ifndef PIXELGPUDETAILS_H
 #define PIXELGPUDETAILS_H
 
+#include <cstdint>
+
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
   // Update the number FED based on maximum fed found in the cabling map
