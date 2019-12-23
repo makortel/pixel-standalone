@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "alpakaConfig.h"
+
 #include "pixelgpudetails.h"
 #include "input.h"
 #include "output.h"
@@ -577,5 +579,5 @@ namespace Alpaka{
       << std::endl;
    }
 
-  } // end namespace alpaka
-} // end namespace ALPAKA_ARCHITECTURE
+  }
+}

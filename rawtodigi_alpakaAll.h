@@ -1,7 +1,7 @@
 #ifndef RAWTODIGI_ALPAKAALL_h
 #define RAWTODIGI_ALPAKAALL_h
 
-#include <alpaka/alpaka.hpp>
+#include "alpakaConfig.h"
 
 namespace {
   constexpr int NLOOPS = 100;
@@ -31,21 +31,17 @@ namespace {
 }
 
 namespace Alpaka {
-  namespace CPU_SERIAL{
-  void rawtodigi();
+  namespace CPU_SERIAL {
+    void rawtodigi();
   }
-}
 
-namespace Alpaka{
-    namespace CPU_TBB{
-      void rawtodigi();
-    }
-}
+  namespace CPU_TBB {
+    void rawtodigi();
+  }
 
-namespace Alpaka{
-    namespace GPU_CUDA{
-      void rawtodigi();
-    }
+  namespace GPU_CUDA {
+    void rawtodigi();
+  }
 }
 
 

@@ -8,7 +8,7 @@ all: $(TARGETS)
 debug: $(TARGETS:%=%-debug)
 
 clean:
-	rm -f main-* debug-*
+	rm -f main-* debug-* *.o
 
 # configure external tool here
 BOOST_BASE  :=
@@ -106,19 +106,19 @@ cuda-debug:
 endif
 
 ifdef ALPAKA_BASE
-alpaka: main-alpaka-ser main-alpaka-tbb main-alpaka-gpu main-alpaka-all
+alpaka: main-alpaka-ser main-alpaka-tbb main-alpaka-gpu main-alpaka
 	@echo -e $(GREEN)Alpaka targets built $(RESET)
 
 # Alpaka implementation with compile-time device choice
-main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DALPAKA_ARCHITECTURE=CPU_SERIAL $(ALPAKA_FLAGS) -o $@ $^
+main-alpaka-ser: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc
 
-main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DALPAKA_ARCHITECTURE=CPU_TBB $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -o $@ $^ $(TBB_LD_FLAGS) -pthread
+main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc $(TBB_LD_FLAGS) -pthread
 
 ifdef CUDA_BASE
-main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc
-	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED -DALPAKA_ARCHITECTURE=GPU_CUDA $(ALPAKA_FLAGS) -o $@ $^
+main-alpaka-gpu: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h
+	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc
 
 else
 main-alpaka-gpu:
@@ -127,19 +127,19 @@ main-alpaka-gpu:
 endif
 
 # Alpaka implementation with run-time device choice
-main_alpakaAll.o: main_alpakaAll.cc
+main_alpakaAll.o: main_alpakaAll.cc rawtodigi_alpakaAll.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpakaSER.o: rawtodigi_alpakaCPU.cc
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DSERIAL $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+rawtodigi_alpakaSER.o: rawtodigi_alpakaAll.cc rawtodigi_alpakaAll.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpakaTBB.o: rawtodigi_alpakaCPU.cc
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DTBB $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+rawtodigi_alpakaTBB.o: rawtodigi_alpakaAll.cc rawtodigi_alpakaAll.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpakaGPU.o: rawtodigi_alpakaGPU.cu
-	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
+rawtodigi_alpakaGPU.o: rawtodigi_alpakaAll.cc rawtodigi_alpakaAll.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
 
-main-alpaka-all: main_alpakaAll.o rawtodigi_alpakaSER.o rawtodigi_alpakaTBB.o rawtodigi_alpakaGPU.o
+main-alpaka: main_alpakaAll.o rawtodigi_alpakaSER.o rawtodigi_alpakaTBB.o rawtodigi_alpakaGPU.o
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread $(TBB_LD_FLAGS) -o $@ $+
 else
 alpaka:

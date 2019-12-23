@@ -5,10 +5,8 @@
 
 #include "pixelgpudetails.h"
 
-#if defined DIGI_CUDA || defined DIGI_CUPLA || defined DIGI_KOKKOS || defined DIGI_ONEAPI
+#if defined DIGI_CUDA || defined DIGI_ALPAKA || defined DIGI_CUPLA || defined DIGI_KOKKOS || defined DIGI_ONEAPI
 #include "GPUSimpleVector.h"
-#elif defined DIGI_ALPAKA
-#include "GPUSimpleVector_alpaka.h"
 #endif
 
 struct alignas(128) Output {
