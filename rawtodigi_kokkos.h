@@ -362,21 +362,23 @@ namespace kokkos {
 
   template <typename InputView, typename OutputView>
   KOKKOS_INLINE_FUNCTION
-  void rawtodigi(const InputView& input, OutputView& output,
+  void rawtodigi(const InputView& inputView, OutputView& outputView,
                  const uint32_t wordCounter,
                  bool useQualityInfo, bool includeErrors, bool debug,
                  const int32_t index)
   {
-    const SiPixelFedCablingMapGPU* cablingMap = &(input(0).cablingMap);
-    const uint32_t* word = input(0).word;
-    const uint8_t* fedIds =input(0).fedId;
-    uint16_t* xx = output(0).xx;
-    uint16_t* yy = output(0).yy;
-    uint16_t* adc = output(0).adc;
-    uint32_t* pdigi = output(0).digi;
-    uint32_t* rawIdArr = output(0).rawIdArr;
-    uint16_t* moduleId = output(0).moduleInd;
-    GPU::SimpleVector<PixelErrorCompact>* err = &(output(0).err);
+    const Input* input = & inputView(0);
+    Ouput* output = & outputView(0);
+    const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
+    const uint32_t* word = input->word;
+    const uint8_t* fedIds = input->fedId;
+    uint16_t* xx = output->xx;
+    uint16_t* yy = output->yy;
+    uint16_t* adc = output->adc;
+    uint32_t* pdigi = output->digi;
+    uint32_t* rawIdArr = output->rawIdArr;
+    uint16_t* moduleId = output->moduleInd;
+    GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
 
     int32_t first = index;
     for (int32_t iloop=first, nend=index+1; iloop<nend; ++iloop) {
