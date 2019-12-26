@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "input.h"
+#include "modules.h"
 #include "output.h"
 
 /* Do NOT include other headers that use CUDA runtime functions or variables
@@ -17,27 +18,6 @@
 
 namespace {
   constexpr int NLOOPS = 100;
-}
-
-namespace gpuClustering {
-  constexpr uint32_t MaxNumModules  = 2000;
-  constexpr uint16_t InvId          = 9999;         // must be > MaxNumModules
-}
-
-int countModules(const uint16_t *id, int numElements) {
-  int nmod = 0;
-  for(int i=0; i<numElements; ++i) {
-    if(id[i] == gpuClustering::InvId)
-      continue;
-    auto j = i-1;
-    while(j >= 0 and id[j] == gpuClustering::InvId) {
-      --j;
-    }
-    if(j < 0 or id[j] != id[i]) {
-      ++nmod;
-    }
-  }
-  return nmod;
 }
 
 int main(int argc, char **argv) {
