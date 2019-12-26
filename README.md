@@ -9,6 +9,10 @@ The purpose of this test program is to experiment with various
 |----------------|-----------------------|---------------------------------|---------------------------------------------------------------------------------------|
 | Naive CPU      | `naive`               | `main-naive`                    | `DIGI_NAIVE`                                                                          |
 | CUDA           | `cuda`                | `main-cuda`                     | `DIGI_CUDA`                                                                           |
+| Alpaka on CPU  | `alpaka`              | `main-alpaka-ser` (sync)        | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`                                   |
+|                |                       | `main-alpaka-tbb` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`                                   |
+| Alpaka on GPU  |                       | `main-alpaka-gpu` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`                                          |
+| Alpaka on all  |                       | `main-alpaka`                   | `DIGI_ALPAKA`, `ALPAKA_ACC_*`                                                         |
 | Cupla on CPU   | `cupla`               | `main-cupla-seq-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
 |                |`                      | `main-cupla-seq-seq-sync`       | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
 |                |                       | `main-cupla-tbb-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
@@ -34,15 +38,27 @@ The CUDA test program requires a recent CUDA version (`nvcc`
 supporting C++14 and `--expt-relaxed-constexpr`) and a machine with
 GPU.
 
-### Cupla
+### Alpaka [release 0.4.0](https://github.com/ComputationalRadiationPhysics/alpaka/tree/release-0.4.0)
+
+The Alpaka test program can be compiled for different backends; so far it has been
+tested with the CUDA, serial, and TBB backends.
+The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.x
+and gcc 8.x.
+
+The backend is chosen at compile time setting one of the `ALPAKA_ACC_*` preprocessor
+symbols. The `main-alpaka` binary tries to exercise all available backends.
+
+See [here](AlpakaAndCupla.md) for instructions on installing Alpaka.
+
+### Cupla [dev](https://github.com/ComputationalRadiationPhysics/cupla/tree/dev) branch
 
 The Cupla test program can be compiled for different backends; so far it has been
 tested with the CUDA, serial, TBB and OpenMP backends.
-The CUDA backend requires CUDA 9.2 through 10.1, and has been tested with gcc 7.x
+The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.x
 and gcc 8.x.
 
 Rather than using the advertised `CMake`-based approach, one can build Cupla as
-a single, header-only library, as described [here](AlpakaAndCupla.md).
+a header-only library, as described [here](AlpakaAndCupla.md).
 
 ### Kokkos
 
