@@ -2,10 +2,7 @@
 #define RAWTODIGI_ALPAKAALL_h
 
 #include "alpakaConfig.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
+#include "input.h"
 
 namespace gpuClustering {
   constexpr uint32_t MaxNumModules  = 2000;
@@ -32,15 +29,15 @@ namespace {
 
 namespace Alpaka {
   namespace CPU_SERIAL {
-    void rawtodigi();
+    void rawtodigi(Input const& input);
   }
 
   namespace CPU_TBB {
-    void rawtodigi();
+    void rawtodigi(Input const& input);
   }
 
   namespace GPU_CUDA {
-    void rawtodigi();
+    void rawtodigi(Input const& input);
   }
 }
 

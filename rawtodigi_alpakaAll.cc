@@ -9,6 +9,10 @@
 
 #include "rawtodigi_alpakaAll.h"
 
+namespace {
+  constexpr int NLOOPS = 100;
+}
+
 namespace Alpaka{
 
   namespace ALPAKA_ARCHITECTURE {
@@ -499,11 +503,7 @@ namespace Alpaka{
 
     };
 
-   void rawtodigi(){
-
-    Input input = read_input();
-    std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
-    
+   void rawtodigi(Input const& input) {
     DevHost const devHost(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     DevAcc const devAcc(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
     Idx const elements(1);
@@ -519,14 +519,11 @@ namespace Alpaka{
     
       output = std::make_unique<Output>();
 
-      using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, Input, Dim, Idx>;
+      using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, const Input, Dim, Idx>;
       ViewInput input_hBuf(&input, devHost, extent);
-
 
       using BufDevInput = alpaka::mem::buf::Buf<DevAcc, Input, Dim, Idx>;
       BufDevInput input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent));
-
-      alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
 
       using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
       ViewOutput output_hBuf(output.get(), devHost, extent);
@@ -536,29 +533,24 @@ namespace Alpaka{
 
       auto start = std::chrono::high_resolution_clock::now();
 
-      // rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf), alpaka::mem::view::getPtrNative(output_dBuf), input.wordCounter, true, true, true, queue);
+      alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
+
       Vec const elementsPerThread(Vec::all(static_cast<Idx>(input.wordCounter)));
       Vec const threadsPerBlock(Vec::all(static_cast<Idx>(1)));
       Vec const blocksPerGrid(Vec::all(static_cast<Idx>(1)));
-      //                       (wordCounter + threadsPerBlock[0] - 1) / threadsPerBlock[0])
-        // ));
-
-      WorkDiv const workDiv(
-      blocksPerGrid,
-      threadsPerBlock,
-      elementsPerThread);
+      WorkDiv const workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
     
       rawtodigi_kernel<Idx> kernel;
 
       auto const taskRawToDigiKernel(alpaka::kernel::createTaskKernel<Acc>(
-                                    workDiv,
-                                    kernel,
-                                    alpaka::mem::view::getPtrNative(input_dBuf),
-                                    alpaka::mem::view::getPtrNative(output_dBuf),
-                                    true,
-                                    true,
-                                    true
-                                    ));
+                                     workDiv,
+                                     kernel,
+                                     alpaka::mem::view::getPtrNative(input_dBuf),
+                                     alpaka::mem::view::getPtrNative(output_dBuf),
+                                     true,
+                                     true,
+                                     true
+                                     ));
 
       alpaka::queue::enqueue(queue, taskRawToDigiKernel);
 
@@ -571,7 +563,6 @@ namespace Alpaka{
       auto diff = stop - start;
       auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
       totaltime += time;
-  
    } 
 
     std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
