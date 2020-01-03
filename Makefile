@@ -2,26 +2,7 @@ TARGETS = naive cuda cupla kokkos oneapi
 
 .PHONY: all debug clean $(TARGETS)
 
-CXX := g++
-CXX_FLAGS := -O2 -std=c++14 -ftemplate-depth-512
-CXX_DEBUG := -g
-
-CUDA_BASE := /usr/local/cuda
-NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
-NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35
-NVCC_DEBUG := -g -lineinfo
-
-ALPAKA_BASE  := /usr/local/alpaka/alpaka
-ALPAKA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include
-CUPLA_BASE   := /usr/local/alpaka/cupla
-CUPLA_FLAGS  := $(ALPAKA_FLAGS) -I$(CUPLA_BASE)/include
-
-ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
-
-GREEN := '\033[32m'
-RED := '\033[31m'
-RESET := '\033[0m'
-
+# general rules and targets
 all: $(TARGETS)
 
 debug: $(TARGETS:%=%-debug)
@@ -29,7 +10,50 @@ debug: $(TARGETS:%=%-debug)
 clean:
 	rm -f main-* debug-*
 
-# Recommended to include only after the first target
+# configure external tool here
+BOOST_BASE  :=
+TBB_BASE    :=
+CUDA_BASE   := /usr/local/cuda
+ALPAKA_BASE := /usr/local/alpaka/alpaka
+CUPLA_BASE  := /usr/local/alpaka/cupla
+
+# host compiler
+CXX := g++
+CXX_FLAGS := -O2 -std=c++14
+CXX_DEBUG := -g
+
+# CUDA compiler
+NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
+NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35
+NVCC_DEBUG := -g -lineinfo
+
+# boost flags
+ifdef BOOST_BASE
+BOOST_CXX_FLAGS := -I$(BOOST_BASE)/include
+else
+BOOST_CXX_FLAGS :=
+endif
+
+# TBB flags
+ifdef TBB_BASE
+TBB_CXX_FLAGS := -I$(TBB_BASE)/include
+TBB_LD_FLAGS  := -L$(TBB_BASE)/lib -ltbb -lrt
+else
+TBB_CXX_FLAGS :=
+TBB_LD_FLAGS  := -ltbb -lrt
+endif
+
+# alpaka flags
+ALPAKA_FLAGS := -DALPAKA_DEBUG=0 -I$(ALPAKA_BASE)/include $(BOOST_CXX_FLAGS)
+
+# cupla flags
+CUPLA_FLAGS  := $(ALPAKA_FLAGS) -I$(CUPLA_BASE)/include
+
+# oneAPI flags
+ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
+
+# Kokkos flags
+# recommended to include only after the first target, see
 # https://github.com/kokkos/kokkos/wiki/Compiling#42-using-kokkos-makefile-system
 ifdef KOKKOS_BASE
   include $(KOKKOS_BASE)/Makefile.kokkos
@@ -40,6 +64,11 @@ ifdef KOKKOS_BASE
     CXX_KOKKOS := $(CXX)
   endif
 endif
+
+# color highlights for ANSI terminals
+GREEN := '\033[32m'
+RED   := '\033[31m'
+RESET := '\033[0m'
 
 # Naive CPU implementation
 naive: main-naive
@@ -116,10 +145,10 @@ debug-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 # Alpaka/cupla implementation, with the TBB blocks backend
 main-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
 
 debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc -ltbb -lrt
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
 
 # Alpaka/cupla implementation, with the OpenMP 2 blocks backend
 main-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
@@ -149,11 +178,11 @@ main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
 
 # Kokkos implementation, OpenMP backend
 main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 # Kokkos implementation, CUDA backend
 main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS)$(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 else
 kokkos:
