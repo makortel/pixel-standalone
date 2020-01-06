@@ -1,5 +1,5 @@
-#ifndef AlpakaConfig_h
-#define AlpakaConfig_h
+#ifndef alpakaConfig_h
+#define alpakaConfig_h
 
 #include <alpaka/alpaka.hpp>
 
@@ -19,7 +19,8 @@ namespace Alpaka {
     using Queue = alpaka::queue::QueueCudaRtNonBlocking;
     using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
     using Vec = alpaka::vec::Vec<Dim, Idx>;
-  } // namespace GPU_CUDA
+  }  // namespace GPU_CUDA
+
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
@@ -37,6 +38,7 @@ namespace Alpaka {
     using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
     using Vec = alpaka::vec::Vec<Dim, Idx>;
   }  // namespace CPU_SERIAL
+
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
@@ -54,8 +56,9 @@ namespace Alpaka {
     using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
     using Vec = alpaka::vec::Vec<Dim, Idx>;
   }  // namespace CPU_TBB
+
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
 }  // namespace Alpaka
 
-#endif  // AlpakaConfig_h
+#endif  // alpakaConfig_h

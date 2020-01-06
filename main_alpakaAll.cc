@@ -8,15 +8,14 @@
 using namespace Alpaka;
 
 int main(int argc, char **argv) {
+  Input input = read_input();
+  std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
-    Input input = read_input();
-    std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
+  CPU_SERIAL::rawtodigi(input);
 
-    CPU_SERIAL::rawtodigi(input);
+  CPU_TBB::rawtodigi(input);
 
-    CPU_TBB::rawtodigi(input);
-    
-    GPU_CUDA::rawtodigi(input);
+  GPU_CUDA::rawtodigi(input);
 
-    return 0;
+  return 0;
 }
