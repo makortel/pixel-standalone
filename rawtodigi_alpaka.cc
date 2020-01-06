@@ -501,10 +501,14 @@ namespace Alpaka {
                    bool includeErrors,
                    bool debug,
                    Queue queue) {
-      Vec const elementsPerThread(Vec::all(static_cast<Idx>(wordCounter)));
-      Vec const threadsPerBlock(Vec::all(static_cast<Idx>(1)));
-      Vec const blocksPerGrid(Vec::all(static_cast<Idx>(1)));
-      WorkDiv const workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+      Vec elementsPerThread(Vec::all(static_cast<Idx>(1)));
+      Vec threadsPerBlock(Vec::all(static_cast<Idx>(512)));
+      Vec blocksPerGrid(Vec::all(static_cast<Idx>((wordCounter + 512 - 1) / 512)));
+#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+      // A block for the serial accelerator can only ever have one single thread!
+      std::swap(threadsPerBlock, elementsPerThread);
+#endif
+      const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
 
       rawtodigi_kernel<Idx> kernel;
 
