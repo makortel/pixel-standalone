@@ -66,9 +66,10 @@ ifdef KOKKOS_BASE
 endif
 
 # color highlights for ANSI terminals
-GREEN := '\033[32m'
-RED   := '\033[31m'
-RESET := '\033[0m'
+GREEN  := '\033[32m'
+RED    := '\033[31m'
+YELLOW := '\033[38;5;220m'
+RESET  := '\033[0m'
 
 # Naive CPU implementation
 naive: main-naive
@@ -98,10 +99,10 @@ debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
 else
 cuda:
-	@echo -e $(RED)NVIDIA CUDA not found$(RESET), CUDA targets will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), CUDA targets will not be built
 
 cuda-debug:
-	@echo -e $(RED)NVIDIA CUDA not found$(RESET), CUDA debug targets will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), CUDA debug targets will not be built
 
 endif
 
@@ -122,7 +123,7 @@ main-alpaka-cuda: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer
 
 else
 main-alpaka-cuda:
-	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
 
 endif
 
@@ -152,7 +153,7 @@ main-alpaka: main_alpakaAll.o rawtodigi_alpaka.serial.o rawtodigi_alpaka.tbb.o r
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread $(TBB_LD_FLAGS) -o $@ $+
 else
 alpaka:
-	@echo -e $(RED)Alpaka not found$(RESET), Alpaka targets will not be built
+	@echo -e $(YELLOW)Alpaka not found$(RESET), Alpaka targets will not be built
 
 endif
 
@@ -173,10 +174,10 @@ debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 else
 main-cupla-cuda-async:
-	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
 
 debug-cupla-cuda-async:
-	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Cupla debug targets using CUDA will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Cupla debug targets using CUDA will not be built
 
 endif
 
@@ -210,10 +211,10 @@ debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 else
 cupla:
-	@echo -e $(RED)Cupla not found$(RESET), Cupla targets will not be built
+	@echo -e $(YELLOW)Cupla not found$(RESET), Cupla targets will not be built
 
 cupla-debug:
-	@echo -e $(RED)Cupla not found$(RESET), Cupla debug targets will not be built
+	@echo -e $(YELLOW)Cupla not found$(RESET), Cupla debug targets will not be built
 
 endif
 
@@ -237,7 +238,7 @@ main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
 
 else
 kokkos:
-	@echo -e $(RED)Kokkos not found$(RESET), Kokkos targets will not be built
+	@echo -e $(YELLOW)Kokkos not found$(RESET), Kokkos targets will not be built
 
 kokkos-debug:
 
@@ -259,8 +260,8 @@ debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
 
 else
 oneapi:
-	@echo -e $(RED)Intel oneAPI not found$(RESET), oneAPI targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI targets will not be built
 
 oneapi-debug:
-	@echo -e $(RED)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
 endif
