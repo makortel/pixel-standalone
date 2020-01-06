@@ -1,13 +1,13 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+#ifdef DIGI_NAIVE
 #include <vector>
-
-#include "pixelgpudetails.h"
-
-#if defined DIGI_CUDA || defined DIGI_ALPAKA || defined DIGI_CUPLA || defined DIGI_KOKKOS || defined DIGI_ONEAPI
+#elif defined DIGI_CUDA || defined DIGI_ALPAKA || defined DIGI_CUPLA || defined DIGI_KOKKOS || defined DIGI_ONEAPI
 #include "GPUSimpleVector.h"
 #endif
+
+#include "pixelgpudetails.h"
 
 struct alignas(128) Output {
   uint16_t xx[pixelgpudetails::MAX_FED_WORDS];
