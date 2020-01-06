@@ -504,9 +504,6 @@ namespace Alpaka {
       Vec const elementsPerThread(Vec::all(static_cast<Idx>(wordCounter)));
       Vec const threadsPerBlock(Vec::all(static_cast<Idx>(1)));
       Vec const blocksPerGrid(Vec::all(static_cast<Idx>(1)));
-      //                       (wordCounter + threadsPerBlock[0] - 1) / threadsPerBlock[0])
-      // ));
-
       WorkDiv const workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
 
       rawtodigi_kernel<Idx> kernel;

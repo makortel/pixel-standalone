@@ -1,8 +1,9 @@
-#ifndef rawtodigi_alpakaAll_h
-#define rawtodigi_alpakaAll_h
+#ifndef analyzer_alpaka_h
+#define analyzer_alpaka_h
 
 #include "alpakaConfig.h"
-#include "input.h"
+
+class Input;
 
 namespace gpuClustering {
   constexpr uint32_t MaxNumModules = 2000;
@@ -29,16 +30,16 @@ namespace {
 
 namespace Alpaka {
   namespace CPU_SERIAL {
-    void rawtodigi(Input const& input);
+    void analyze(Input const& input);
   }
 
   namespace CPU_TBB {
-    void rawtodigi(Input const& input);
+    void analyze(Input const& input);
   }
 
   namespace GPU_CUDA {
-    void rawtodigi(Input const& input);
+    void analyze(Input const& input);
   }
 }  // namespace Alpaka
 
-#endif  // rawtodigi_alpakaAll_h
+#endif  // analyzer_alpaka_h
