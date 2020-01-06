@@ -4,41 +4,19 @@
 #include "alpakaConfig.h"
 
 class Input;
-
-namespace gpuClustering {
-  constexpr uint32_t MaxNumModules = 2000;
-  constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
-}  // namespace gpuClustering
-
-namespace {
-  int countModules(const uint16_t* id, int numElements) {
-    int nmod = 0;
-    for (int i = 0; i < numElements; ++i) {
-      if (id[i] == gpuClustering::InvId)
-        continue;
-      auto j = i - 1;
-      while (j >= 0 and id[j] == gpuClustering::InvId) {
-        --j;
-      }
-      if (j < 0 or id[j] != id[i]) {
-        ++nmod;
-      }
-    }
-    return nmod;
-  }
-}  // namespace
+class Output;
 
 namespace Alpaka {
   namespace CPU_SERIAL {
-    void analyze(Input const& input);
+    void analyze(Input const& input, Output& output, double& totaltime);
   }
 
   namespace CPU_TBB {
-    void analyze(Input const& input);
+    void analyze(Input const& input, Output& output, double& totaltime);
   }
 
   namespace GPU_CUDA {
-    void analyze(Input const& input);
+    void analyze(Input const& input, Output& output, double& totaltime);
   }
 }  // namespace Alpaka
 

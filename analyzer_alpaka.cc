@@ -16,7 +16,7 @@ namespace Alpaka {
 
   namespace ALPAKA_ARCHITECTURE {
 
-    void analyze(Input const& input) {
+    void analyze(Input const& input, Output& output, double& totaltime) {
       DevHost const devHost(alpaka::pltf::getDevByIdx<PltfHost>(0u));
       DevAcc const devAcc(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
       Idx const elements(1);
@@ -24,13 +24,9 @@ namespace Alpaka {
 
       Queue queue(devAcc);
 
-      int totaltime = 0;
-
-      std::unique_ptr<Output> output;
+      totaltime = 0.;
 
       for (int i = 0; i < NLOOPS; i++) {
-        output = std::make_unique<Output>();
-
         using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, const Input, Dim, Idx>;
         ViewInput input_hBuf(&input, devHost, extent);
 
@@ -38,7 +34,7 @@ namespace Alpaka {
         BufDevInput input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(devAcc, extent));
 
         using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
-        ViewOutput output_hBuf(output.get(), devHost, extent);
+        ViewOutput output_hBuf(&output, devHost, extent);
 
         using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
         BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
@@ -62,12 +58,10 @@ namespace Alpaka {
         auto stop = std::chrono::high_resolution_clock::now();
 
         auto diff = stop - start;
-        auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-        totaltime += time;
+        totaltime += std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
       }
 
-      std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-                << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
+      totaltime /= NLOOPS;
     }
 
   }  // namespace ALPAKA_ARCHITECTURE
