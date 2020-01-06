@@ -15,7 +15,7 @@ int main() {
   std::unique_ptr<Output> output = std::make_unique<Output>();
   double totaltime = 0;
 
-  Alpaka::ALPAKA_ARCHITECTURE::analyze(input, *output, totaltime);
+  ALPAKA_ARCHITECTURE::analyze(input, *output, totaltime);
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
             << std::endl;
 
