@@ -36,17 +36,19 @@ namespace ALPAKA_ARCHITECTURE {
 
       using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
       BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
+      alpaka::mem::view::getPtrNative(output_hBuf)->err.construct(pixelgpudetails::MAX_FED_WORDS, alpaka::mem::view::getPtrNative(output_dBuf)->err_d);
 
       auto start = std::chrono::high_resolution_clock::now();
 
       alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, extent);
+      alpaka::mem::view::copy(queue, output_dBuf, output_hBuf, extent);
 
       rawtodigi(alpaka::mem::view::getPtrNative(input_dBuf),
                 alpaka::mem::view::getPtrNative(output_dBuf),
                 input.wordCounter,
                 true,
                 true,
-                true,
+                false,
                 queue);
 
       alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, extent);
