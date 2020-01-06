@@ -1,5 +1,5 @@
-#ifndef moduels_h
-#define moduels_h
+#ifndef modules_h
+#define modules_h
 
 namespace gpuClustering {
   constexpr uint32_t MaxNumModules = 2000;
@@ -23,4 +23,4 @@ int countModules(const uint16_t *id, int size) {
   return modules;
 }
 
-#endif  // moduels_h
+#endif  // modules_h
