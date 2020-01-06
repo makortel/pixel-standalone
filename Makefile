@@ -1,4 +1,4 @@
-TARGETS = naive cuda cupla kokkos oneapi
+TARGETS = naive cuda alpaka cupla kokkos oneapi
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -8,7 +8,7 @@ all: $(TARGETS)
 debug: $(TARGETS:%=%-debug)
 
 clean:
-	rm -f main-* debug-*
+	rm -f main-* debug-* *.o
 
 # configure external tool here
 BOOST_BASE  :=
@@ -106,6 +106,57 @@ cuda-debug:
 endif
 
 ifdef ALPAKA_BASE
+alpaka: main-alpaka-serial main-alpaka-tbb main-alpaka-cuda main-alpaka
+	@echo -e $(GREEN)Alpaka targets built $(RESET)
+
+# Alpaka implementation with compile-time device choice
+main-alpaka-serial: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc
+
+main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc $(TBB_LD_FLAGS) -pthread
+
+ifdef CUDA_BASE
+main-alpaka-cuda: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc
+
+else
+main-alpaka-cuda:
+	@echo -e $(RED)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
+
+endif
+
+# Alpaka implementation with run-time device choice
+main_alpakaAll.o: main_alpakaAll.cc analyzer_alpaka.h modules.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
+
+analyzer_alpaka.serial.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -pthread -o $@ -c $<
+
+analyzer_alpaka.tbb.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+analyzer_alpaka.cuda.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
+
+main-alpaka: main_alpakaAll.o rawtodigi_alpaka.serial.o rawtodigi_alpaka.tbb.o rawtodigi_alpaka.cuda.o analyzer_alpaka.serial.o analyzer_alpaka.tbb.o analyzer_alpaka.cuda.o
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread $(TBB_LD_FLAGS) -o $@ $+
+else
+alpaka:
+	@echo -e $(RED)Alpaka not found$(RESET), Alpaka targets will not be built
+
+endif
+
+ifdef CUPLA_BASE
 cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync main-cupla-tbb-seq-async main-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla targets built$(RESET)
 
@@ -159,10 +210,10 @@ debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 
 else
 cupla:
-	@echo -e $(RED)Alpaka and Cupla not found$(RESET), Alpaka and Cupla targets will not be built
+	@echo -e $(RED)Cupla not found$(RESET), Cupla targets will not be built
 
 cupla-debug:
-	@echo -e $(RED)Alpaka and Cupla not found$(RESET), Alpaka and Cupla debug targets will not be built
+	@echo -e $(RED)Cupla not found$(RESET), Cupla debug targets will not be built
 
 endif
 

@@ -8,6 +8,8 @@
 
 #if defined DIGI_CUDA
 #include <cuda.h>
+#elif defined DIGI_ALPAKA
+#include <alpaka/alpaka.hpp>
 #elif defined DIGI_CUPLA
 /* Do NOT include other headers that use CUDA runtime functions or variables
  * before this include, because cupla renames CUDA host functions and device
@@ -65,7 +67,63 @@ template <class T> struct SimpleVector {
       return T(); //undefined behaviour
   }
 
-#ifdef DIGI_CUPLA
+#if defined DIGI_CUDA && defined __CUDACC__
+
+  // thread-safe version of the vector, when used in a CUDA kernel
+  __device__
+  int push_back(const T &element) {
+    auto previousSize = atomicAdd(&m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      atomicSub(&m_size, 1);
+      return -1;
+    }
+  }
+
+  template <class... Ts>
+  __device__
+  int emplace_back(Ts &&... args) {
+    auto previousSize = atomicAdd(&m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      atomicSub(&m_size, 1);
+      return -1;
+    }
+  }
+
+#elif defined DIGI_ALPAKA
+
+  template <typename T_Acc>
+  ALPAKA_FN_ACC
+  int push_back(T_Acc const& acc, const T &element) {
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
+    if (previousSize < m_capacity) {
+      m_data[previousSize] = element;
+      return previousSize;
+    } else {
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
+      return -1;
+    }
+  }
+
+  template <typename T_Acc, class... Ts>
+  ALPAKA_FN_ACC
+  int emplace_back(T_Acc const& acc, Ts &&... args) {
+    auto previousSize = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &m_size, 1);
+    if (previousSize < m_capacity) {
+      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
+      return previousSize;
+    } else {
+      alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &m_size, 1);
+      return -1;
+    }
+  }
+
+#elif defined DIGI_CUPLA
 
   template <typename T_Acc>
   ALPAKA_FN_ACC
@@ -120,34 +178,6 @@ template <class T> struct SimpleVector {
     }
   }
 
-#elif defined DIGI_CUDA && defined __CUDACC__
-
-  // thread-safe version of the vector, when used in a CUDA kernel
-  __device__
-  int push_back(const T &element) {
-    auto previousSize = atomicAdd(&m_size, 1);
-    if (previousSize < m_capacity) {
-      m_data[previousSize] = element;
-      return previousSize;
-    } else {
-      atomicSub(&m_size, 1);
-      return -1;
-    }
-  }
-
-  template <class... Ts>
-  __device__
-  int emplace_back(Ts &&... args) {
-    auto previousSize = atomicAdd(&m_size, 1);
-    if (previousSize < m_capacity) {
-      (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
-      return previousSize;
-    } else {
-      atomicSub(&m_size, 1);
-      return -1;
-    }
-  }
-
 #elif defined DIGI_ONEAPI
 
   int push_back(const T &element) {
@@ -173,7 +203,7 @@ template <class T> struct SimpleVector {
     }
   }
 
-#endif // DIGI_CUPLA || DIGI_KOKKOS || DIGI_CUDA || DIGI_ONEAPI
+#endif
 
   inline constexpr bool empty() const { return m_size==0;}
   inline constexpr bool full() const { return m_size==m_capacity;}

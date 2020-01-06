@@ -22,6 +22,8 @@ Relevant links:
   - [Alpaka](https://github.com/ComputationalRadiationPhysics/alpaka) on GitHub
   - Alpaka's [documentation](https://github.com/ComputationalRadiationPhysics/alpaka/blob/develop/doc/markdown/user/Introduction.md)
 
+As of December 2019, the latest release of Alpaka is [version 0.4.0](https://github.com/ComputationalRadiationPhysics/alpaka/tree/release-0.4.0).
+
 ## Cupla
 
 From the Cupla [README]():
@@ -35,36 +37,40 @@ Relevant links:
   - Cupla's [porting guide](https://github.com/ComputationalRadiationPhysics/cupla/blob/master/doc/PortingGuide.md)
   - Cupla's [tuning guide](https://github.com/ComputationalRadiationPhysics/cupla/blob/master/doc/TuningGuide.md)
 
+As of December 2019, the [dev branch](https://github.com/ComputationalRadiationPhysics/cupla/tree/dev)
+of Cupla can be used with Alpaka version 0.4.0.
+
 
 # Building Alpaka and Cupla without CMake
 
 ## Set up the environment
 ```bash
 BASE=$PWD
-export CUDA_ROOT=/usr/local/cuda
-export ALPAKA_ROOT=$BASE/alpaka
-export CUPLA_ROOT=$BASE/cupla
+export CUDA_BASE=/usr/local/cuda
+export ALPAKA_BASE=$BASE/alpaka
+export CUPLA_BASE=$BASE/cupla
 
 CXX=/usr/bin/g++
-CXXFLAGS="-m64 -std=c++14 -g -O2 -DALPAKA_DEBUG=0 -I$CUDA_ROOT/include -I$ALPAKA_ROOT/include -I$CUPLA_ROOT/include"
-HOST_FLAGS="-fopenmp -pthread -fPIC -ftemplate-depth-512 -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-local-typedefs -Wno-attributes -Wno-reorder -Wno-sign-compare"
+CXXFLAGS="-m64 -std=c++14 -g -O2 -DALPAKA_DEBUG=0 -I$CUDA_BASE/include -I$ALPAKA_BASE/include -I$CUPLA_BASE/include"
+HOST_FLAGS="-fopenmp -pthread -fPIC -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-local-typedefs -Wno-attributes -Wno-reorder -Wno-sign-compare"
 
-NVCC="$CUDA_ROOT/bin/nvcc"
-NVCC_FLAGS="-ccbin $CXX -w -lineinfo --expt-extended-lambda --expt-relaxed-constexpr --generate-code arch=compute_35,code=sm_35 --use_fast_math --ftz=false --cudart shared"
+NVCC="$CUDA_BASE/bin/nvcc"
+NVCC_FLAGS="-ccbin $CXX -w -lineinfo --expt-extended-lambda --expt-relaxed-constexpr --generate-code arch=compute_35,code=sm_35 --cudart shared"
 ```
 
 ## Download Alpaka and Cupla
 ```bash
-git clone git@github.com:ComputationalRadiationPhysics/alpaka.git -b develop $ALPAKA_ROOT
-git clone git@github.com:ComputationalRadiationPhysics/cupla.git  -b dev     $CUPLA_ROOT
+git clone git@github.com:ComputationalRadiationPhysics/alpaka.git -b release-0.4.0 $ALPAKA_BASE
+git clone git@github.com:ComputationalRadiationPhysics/cupla.git  -b dev           $CUPLA_BASE
 ```
 
 ## Remove the embedded version of Alpaka from Cupla
 ```bash
-cd $CUPLA_ROOT
+cd $CUPLA_BASE
 git config core.sparsecheckout true
 echo -e '/*\n!/alpaka' > .git/info/sparse-checkout
 git read-tree -mu HEAD
+cd ..
 ```
 
 # Building an example with Cupla
@@ -72,20 +78,20 @@ git read-tree -mu HEAD
 ## Using the serial CPU backend, with synchronous kernel launches
 ```bash
 cd $BASE
-$CXX -include cupla/config/CpuSerial.hpp -DCUPLA_STREAM_ASYNC_ENABLED=0 $CXXFLAGS $HOST_FLAGS $CUPLA_ROOT/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -o vectorAdd-seq-seq-sync
+$CXX -include cupla/config/CpuSerial.hpp -DCUPLA_STREAM_ASYNC_ENABLED=0 $CXXFLAGS $HOST_FLAGS $CUPLA_BASE/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -o vectorAdd-seq-seq-sync
 ./vectorAdd-seq-seq-sync
 ```
 
 ## Using the TBB blocks CPU backend, with asynchronous kernel launches
 ```bash
 cd $BASE
-$CXX -include cupla/config/CpuTbbBlocks.hpp -DCUPLA_STREAM_ASYNC_ENABLED=1 $CXXFLAGS $HOST_FLAGS $CUPLA_ROOT/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -ltbbmalloc -ltbb -o vectorAdd-tbb-seq-async
+$CXX -include cupla/config/CpuTbbBlocks.hpp -DCUPLA_STREAM_ASYNC_ENABLED=1 $CXXFLAGS $HOST_FLAGS $CUPLA_BASE/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -ltbbmalloc -ltbb -o vectorAdd-tbb-seq-async
 ./vectorAdd-tbb-seq-async
 ```
 
 ## Using the CUDA GPU backend, with asynchronous kernel launches
 ```bash
 cd $BASE
-$NVCC -include cupla/config/GpuCudaRt.hpp -DCUPLA_STREAM_ASYNC_ENABLED=1 $CXXFLAGS $NVCC_FLAGS -Xcompiler "$HOST_FLAGS" -x cu $CUPLA_ROOT/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -o vectorAdd-cuda-async
-LD_LIBRARY_PATH=$CUDA_ROOT/lib64 ./vectorAdd-cuda-async
+$NVCC -include cupla/config/GpuCudaRt.hpp -DCUPLA_STREAM_ASYNC_ENABLED=1 $CXXFLAGS $NVCC_FLAGS -Xcompiler "$HOST_FLAGS" -x cu $CUPLA_BASE/example/CUDASamples/vectorAdd/src/vectorAdd.cpp -o vectorAdd-cuda-async
+LD_LIBRARY_PATH=$CUDA_BASE/lib64 ./vectorAdd-cuda-async
 ```
