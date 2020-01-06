@@ -1,5 +1,5 @@
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef input_h_
+#define input_h_
 
 #include <fstream>
 
@@ -12,17 +12,16 @@ struct alignas(128) Input {
   unsigned int wordCounter;
 };
 
-inline
-Input read_input() {
+inline Input read_input() {
   Input ret;
 
   std::ifstream file{"dump.bin", std::ios::binary};
   file.read(reinterpret_cast<char *>(&ret.cablingMap), sizeof(SiPixelFedCablingMapGPU));
   file.read(reinterpret_cast<char *>(&ret.wordCounter), sizeof(unsigned int));
-  file.read(reinterpret_cast<char *>(&ret.word), sizeof(unsigned int)*ret.wordCounter);
-  file.read(reinterpret_cast<char *>(&ret.fedId), sizeof(unsigned char)*ret.wordCounter/2);
+  file.read(reinterpret_cast<char *>(&ret.word), sizeof(unsigned int) * ret.wordCounter);
+  file.read(reinterpret_cast<char *>(&ret.fedId), sizeof(unsigned char) * ret.wordCounter / 2);
 
   return ret;
 }
 
-#endif
+#endif  // input_h_

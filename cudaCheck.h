@@ -1,14 +1,13 @@
-#ifndef HeterogeneousCore_CUDAUtilities_cudaCheck_h
-#define HeterogeneousCore_CUDAUtilities_cudaCheck_h
+#ifndef cudaCheck_h_
+#define cudaCheck_h_
 
 #include <iostream>
 
 #if defined DIGI_CUDA
+#include <cuda.h>
 #include <cuda_runtime.h>
 
-inline
-bool cudaCheck_(const char* file, int line, const char* cmd, CUresult result)
-{
+inline bool cudaCheck_(const char* file, int line, const char* cmd, CUresult result) {
   //std::cerr << file << ", line " << line << ": " << cmd << std::endl;
   if (result == CUDA_SUCCESS)
     return true;
@@ -31,9 +30,7 @@ bool cudaCheck_(const char* file, int line, const char* cmd, CUresult result)
 #include <cuda_to_cupla.hpp>
 #endif
 
-inline
-bool cudaCheck_(const char* file, int line, const char* cmd, cudaError_t result)
-{
+inline bool cudaCheck_(const char* file, int line, const char* cmd, cudaError_t result) {
   //std::cerr << file << ", line " << line << ": " << cmd << std::endl;
   if (result == cudaSuccess)
     return true;
@@ -47,4 +44,4 @@ bool cudaCheck_(const char* file, int line, const char* cmd, cudaError_t result)
 
 #define cudaCheck(ARG) (cudaCheck_(__FILE__, __LINE__, #ARG, (ARG)))
 
-#endif // HeterogeneousCore_CUDAUtilities_cudaCheck_h
+#endif  // cudaCheck_h_

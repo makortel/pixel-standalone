@@ -8,7 +8,7 @@
 #include "modules.h"
 #include "output.h"
 
-int main() {
+int main(int argc, char** argv) {
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 

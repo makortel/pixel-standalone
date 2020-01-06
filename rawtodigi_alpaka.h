@@ -1,11 +1,10 @@
-#ifndef rawtodigi_alpaka_h
-#define rawtodigi_alpaka_h
-
-#include "pixelgpudetails.h"
-#include "input.h"
-#include "output.h"
+#ifndef rawtodigi_alpaka_h_
+#define rawtodigi_alpaka_h_
 
 #include "alpakaConfig.h"
+#include "input.h"
+#include "output.h"
+#include "pixelgpudetails.h"
 
 namespace ALPAKA_ARCHITECTURE {
 
@@ -19,4 +18,4 @@ namespace ALPAKA_ARCHITECTURE {
 
 }  // namespace ALPAKA_ARCHITECTURE
 
-#endif  // rawtodigi_alpaka_h
+#endif  // rawtodigi_alpaka_h_
