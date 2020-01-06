@@ -1,5 +1,5 @@
-#ifndef RAWTODIGI_CUPLA_H
-#define RAWTODIGI_CUPLA_H
+#ifndef rawtodigi_cupla_h_
+#define rawtodigi_cupla_h_
 
 /* Do NOT include other headers that use CUDA runtime functions or variables
  * before this include, because cupla renames CUDA host functions and device
@@ -8,15 +8,21 @@
  */
 #include <cuda_to_cupla.hpp>
 
-#include "pixelgpudetails.h"
 #include "GPUSimpleVector.h"
 #include "input.h"
 #include "output.h"
+#include "pixelgpudetails.h"
 
 namespace cupla {
-  void rawtodigi(const Input *input_d, Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo, bool includeErrors, bool debug, cudaStream_t stream);
-}
 
-#endif
+  void rawtodigi(const Input *input_d,
+                 Output *output_d,
+                 const uint32_t wordCounter,
+                 bool useQualityInfo,
+                 bool includeErrors,
+                 bool debug,
+                 cudaStream_t stream);
+
+}  // namespace cupla
+
+#endif  // rawtodigi_cupla_h_

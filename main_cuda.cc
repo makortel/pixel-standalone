@@ -1,14 +1,14 @@
-#include <iostream>
 #include <chrono>
-#include <memory>
 #include <cstring>
+#include <iostream>
+#include <memory>
 
+#include <cuda_runtime.h>
+
+#include "cudaCheck.h"
 #include "input.h"
 #include "modules.h"
 #include "output.h"
-
-#include <cuda_runtime.h>
-#include "cudaCheck.h"
 #include "rawtodigi_cuda.h"
 
 namespace {
@@ -16,7 +16,6 @@ namespace {
 }
 
 int main(int argc, char **argv) {
-
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
@@ -26,7 +25,7 @@ int main(int argc, char **argv) {
   int totaltime = 0;
 
   std::unique_ptr<Output> output;
-  for(int i=0; i<NLOOPS; ++i) {
+  for (int i = 0; i < NLOOPS; ++i) {
     output = std::make_unique<Output>();
 
     Input *input_d, *input_h;
@@ -43,9 +42,7 @@ int main(int argc, char **argv) {
     cudaCheck(cudaMemcpyAsync(input_d, input_h, sizeof(Input), cudaMemcpyDefault, stream));
     cudaCheck(cudaMemcpyAsync(output_d, output_h, sizeof(Output), cudaMemcpyDefault, stream));
 
-    cuda::rawtodigi(input_d, output_d,
-                    input.wordCounter,
-                    true, true, false, stream);
+    cuda::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, stream);
 
     cudaCheck(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDefault, stream));
     cudaCheck(cudaStreamSynchronize(stream));
@@ -64,12 +61,11 @@ int main(int argc, char **argv) {
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
     totaltime += time;
   }
-  
+
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-            << (static_cast<double>(totaltime)/NLOOPS) << " us"
-            << std::endl;
+            << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
 
   cudaStreamDestroy(stream);
-  
+
   return 0;
 }

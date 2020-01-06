@@ -36,7 +36,8 @@ namespace ALPAKA_ARCHITECTURE {
 
       using BufDevOutput = alpaka::mem::buf::Buf<DevAcc, Output, Dim, Idx>;
       BufDevOutput output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(devAcc, extent));
-      alpaka::mem::view::getPtrNative(output_hBuf)->err.construct(pixelgpudetails::MAX_FED_WORDS, alpaka::mem::view::getPtrNative(output_dBuf)->err_d);
+      alpaka::mem::view::getPtrNative(output_hBuf)
+          ->err.construct(pixelgpudetails::MAX_FED_WORDS, alpaka::mem::view::getPtrNative(output_dBuf)->err_d);
 
       auto start = std::chrono::high_resolution_clock::now();
 

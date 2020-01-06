@@ -16,7 +16,6 @@ namespace {
 }
 
 int main(int argc, char **argv) {
-
   cl::sycl::default_selector device_selector;
   cl::sycl::device device{device_selector};
   cl::sycl::context ctx{device};
@@ -32,29 +31,29 @@ int main(int argc, char **argv) {
 #ifdef DIGI_ONEAPI_WORKAROUND
   output = std::make_unique<Output>();
 #endif  // DIGI_ONEAPI_WORKAROUND
-  for(int i=0; i<NLOOPS; ++i) {
+  for (int i = 0; i < NLOOPS; ++i) {
 #ifndef DIGI_ONEAPI_WORKAROUND
     output = std::make_unique<Output>();
 #endif  // ! DIGI_ONEAPI_WORKAROUND
 
-    auto input_d = (Input *) cl::sycl::malloc_device(sizeof(Input), device, ctx);
+    auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), device, ctx);
     if (input_d == nullptr) {
       std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of device memory" << std::endl;
       exit(1);
     }
-    auto input_h = (Input *) cl::sycl::malloc_host(sizeof(Input), ctx);
+    auto input_h = (Input *)cl::sycl::malloc_host(sizeof(Input), ctx);
     if (input_h == nullptr) {
       std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of host memory" << std::endl;
       exit(1);
     }
     std::memcpy(input_h, &input, sizeof(Input));
 
-    auto output_d = (Output *) cl::sycl::malloc_device(sizeof(Output), device, ctx);
+    auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), device, ctx);
     if (output_d == nullptr) {
       std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of device memory" << std::endl;
       exit(1);
     }
-    auto output_h = (Output *) cl::sycl::malloc_host(sizeof(Output), ctx);
+    auto output_h = (Output *)cl::sycl::malloc_host(sizeof(Output), ctx);
     if (output_h == nullptr) {
       std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of host memory" << std::endl;
       exit(1);
@@ -62,14 +61,12 @@ int main(int argc, char **argv) {
     output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
 
     auto start = std::chrono::high_resolution_clock::now();
-    queue.memcpy((void*)input_d, (void*)input_h, sizeof(Input));
-    queue.memcpy((void*)output_d, (void*)output_h, sizeof(Output));
+    queue.memcpy((void *)input_d, (void *)input_h, sizeof(Input));
+    queue.memcpy((void *)output_d, (void *)output_h, sizeof(Output));
 
-    oneapi::rawtodigi(input_d, output_d,
-                      input.wordCounter,
-                      true, true, false, queue);
+    oneapi::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, queue);
 
-    queue.memcpy((void*)output_h, (void*)output_d, sizeof(Output));
+    queue.memcpy((void *)output_h, (void *)output_d, sizeof(Output));
     queue.wait();
     auto stop = std::chrono::high_resolution_clock::now();
 
@@ -86,10 +83,9 @@ int main(int argc, char **argv) {
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
     totaltime += time;
   }
-  
+
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-            << (static_cast<double>(totaltime)/NLOOPS) << " us"
-            << std::endl;
+            << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
 
   return 0;
 }

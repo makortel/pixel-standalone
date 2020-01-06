@@ -1,5 +1,5 @@
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#ifndef output_h_
+#define output_h_
 
 #ifdef DIGI_NAIVE
 #include <vector>
@@ -26,4 +26,4 @@ struct alignas(128) Output {
 #endif
 };
 
-#endif
+#endif  // output_h_

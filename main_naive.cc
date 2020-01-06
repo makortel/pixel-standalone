@@ -1,12 +1,11 @@
-#include <iostream>
 #include <chrono>
-#include <memory>
 #include <cstring>
+#include <iostream>
+#include <memory>
 
 #include "input.h"
 #include "modules.h"
 #include "output.h"
-
 #include "rawtodigi_naive.h"
 
 namespace {
@@ -14,14 +13,13 @@ namespace {
 }
 
 int main(int argc, char **argv) {
-
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
   int totaltime = 0;
 
   std::unique_ptr<Output> output;
-  for(int i=0; i<NLOOPS; ++i) {
+  for (int i = 0; i < NLOOPS; ++i) {
     output = std::make_unique<Output>();
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -36,17 +34,18 @@ int main(int argc, char **argv) {
                      output->rawIdArr,
                      output->moduleInd,
                      &output->err,
-                     true, true, false);
+                     true,
+                     true,
+                     false);
     auto stop = std::chrono::high_resolution_clock::now();
 
     auto diff = stop - start;
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
     totaltime += time;
   }
-  
+
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-            << (static_cast<double>(totaltime)/NLOOPS) << " us"
-            << std::endl;
+            << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
 
   return 0;
 }

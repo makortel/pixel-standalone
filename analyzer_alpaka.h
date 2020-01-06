@@ -1,5 +1,5 @@
-#ifndef analyzer_alpaka_h
-#define analyzer_alpaka_h
+#ifndef analyzer_alpaka_h_
+#define analyzer_alpaka_h_
 
 #include "alpakaConfig.h"
 
@@ -18,4 +18,4 @@ namespace alpaka_cuda_async {
   void analyze(Input const& input, Output& output, double& totaltime);
 }
 
-#endif  // analyzer_alpaka_h
+#endif  // analyzer_alpaka_h_

@@ -1,13 +1,12 @@
-#ifndef modules_h
-#define modules_h
+#ifndef modules_h_
+#define modules_h_
 
 namespace gpuClustering {
   constexpr uint32_t MaxNumModules = 2000;
   constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
 }  // namespace gpuClustering
 
-inline
-int countModules(const uint16_t *id, int size) {
+inline int countModules(const uint16_t *id, int size) {
   int modules = 0;
   for (int i = 0; i < size; ++i) {
     if (id[i] == gpuClustering::InvId)
@@ -23,4 +22,4 @@ int countModules(const uint16_t *id, int size) {
   return modules;
 }
 
-#endif  // modules_h
+#endif  // modules_h_
