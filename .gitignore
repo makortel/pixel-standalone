@@ -1,4 +1,4 @@
 *~
-*.o
 main-*
 debug-*
+build/
