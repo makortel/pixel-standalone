@@ -8,13 +8,19 @@
 
 namespace ALPAKA_ARCHITECTURE {
 
-  void rawtodigi(const Input *input_d,
-                 Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo,
-                 bool includeErrors,
-                 bool debug,
-                 Queue queue);
+  struct rawtodigi_kernel {
+    template <typename T_Acc>
+    ALPAKA_FN_ACC void operator()(T_Acc const& acc,
+                                  const Input* input,
+                                  Output* output,
+                                  bool useQualityInfo,
+                                  bool includeErrors,
+                                  bool debug) const;
+  };
+
+  // explicit template instantiation declaration for ALPAKA_ARCHITECTURE::Acc
+  extern template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(
+      Acc const& acc, const Input* input, Output* output, bool useQualityInfo, bool includeErrors, bool debug) const;
 
 }  // namespace ALPAKA_ARCHITECTURE
 

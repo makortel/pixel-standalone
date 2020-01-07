@@ -1,8 +1,6 @@
 #ifndef analyzer_alpaka_h_
 #define analyzer_alpaka_h_
 
-#include "alpakaConfig.h"
-
 class Input;
 class Output;
 

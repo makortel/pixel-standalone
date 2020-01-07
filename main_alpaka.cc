@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 
+#include "alpakaConfig.h"
 #include "analyzer_alpaka.h"
 #include "input.h"
 #include "modules.h"

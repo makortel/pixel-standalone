@@ -42,13 +42,19 @@ namespace ALPAKA_ARCHITECTURE {
       alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, size);
       alpaka::mem::view::copy(queue, output_dBuf, output_hBuf, size);
 
-      rawtodigi(input_d,
-                output_d,
-                input.wordCounter,
-                true,
-                true,
-                false,
-                queue);
+      Vec elementsPerThread(Vec::all(1));
+      Vec threadsPerBlock(Vec::all(512));
+      Vec blocksPerGrid(Vec::all((input.wordCounter + 512 - 1) / 512));
+#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+      // on the GPU, run with 512 threads in parallel per block, each looking at a single element
+      // on the CPU, run serially with a single thread per block, over 512 elements
+      std::swap(threadsPerBlock, elementsPerThread);
+#endif
+      const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+
+      alpaka::queue::enqueue(
+          queue,
+          alpaka::kernel::createTaskKernel<Acc>(workDiv, rawtodigi_kernel(), input_d, output_d, true, true, false));
 
       alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, size);
 
