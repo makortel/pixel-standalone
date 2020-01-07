@@ -1,4 +1,5 @@
 TARGETS = naive cuda alpaka cupla kokkos oneapi
+BUILD   = build
 
 .PHONY: all debug clean $(TARGETS)
 
@@ -8,7 +9,10 @@ all: $(TARGETS)
 debug: $(TARGETS:%=%-debug)
 
 clean:
-	rm -f main-* debug-* *.o
+	rm -r -f test-* debug-* $(BUILD)
+
+$(BUILD):
+	mkdir -p $(BUILD)
 
 # configure external tool here
 BOOST_BASE  :=
@@ -72,13 +76,13 @@ YELLOW := '\033[38;5;220m'
 RESET  := '\033[0m'
 
 # Naive CPU implementation
-naive: main-naive
+naive: test-naive
 	@echo -e $(GREEN)naive targets built$(RESET)
 
 naive-debug: debug-naive
 	@echo -e $(GREEN)naive debug targets built$(RESET)
 
-main-naive: main_naive.cc rawtodigi_naive.h
+test-naive: main_naive.cc rawtodigi_naive.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
 
 debug-naive: main_naive.cc rawtodigi_naive.h
@@ -86,13 +90,13 @@ debug-naive: main_naive.cc rawtodigi_naive.h
 
 ifdef CUDA_BASE
 # CUDA implementation
-cuda: main-cuda
+cuda: test-cuda
 	@echo -e $(GREEN)CUDA targets built$(RESET)
 
 cuda-debug: debug-cuda
 	@echo -e $(GREEN)CUDA debug targets built$(RESET)
 
-main-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
+test-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu
 
 debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
@@ -107,49 +111,50 @@ cuda-debug:
 endif
 
 ifdef ALPAKA_BASE
-alpaka: main-alpaka-serial main-alpaka-tbb main-alpaka-cuda main-alpaka
+alpaka: test-alpaka-serial test-alpaka-tbb test-alpaka-cuda test-alpaka
 	@echo -e $(GREEN)Alpaka targets built $(RESET)
 
 # Alpaka implementation with compile-time device choice
-main-alpaka-serial: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+
+test-alpaka-serial: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc
 
-main-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+test-alpaka-tbb: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc $(TBB_LD_FLAGS) -pthread
 
 ifdef CUDA_BASE
-main-alpaka-cuda: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
-	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc rawtodigi_alpaka.cc analyzer_alpaka.cc
+test-alpaka-cuda: main_alpaka.cc rawtodigi_alpaka.cc rawtodigi_alpaka.h analyzer_alpaka.cc analyzer_alpaka.h modules.h
+	$(NVCC) -x cu $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -o $@ main_alpaka.cc analyzer_alpaka.cc rawtodigi_alpaka.cc
 
 else
-main-alpaka-cuda:
+test-alpaka-cuda:
 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
 
 endif
 
 # Alpaka implementation with run-time device choice
-main_alpakaAll.o: main_alpakaAll.cc analyzer_alpaka.h modules.h
+$(BUILD)/main_alpakaAll.o: main_alpakaAll.cc analyzer_alpaka.h modules.h $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
 
-rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc rawtodigi_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
 
-analyzer_alpaka.serial.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-analyzer_alpaka.tbb.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
 
-analyzer_alpaka.cuda.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h
+$(BUILD)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h output.h pixelgpudetails.h $(BUILD)
 	$(NVCC) -x cu $(NVCC_FLAGS)  -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_FLAGS) -Xcompiler -pthread -o $@ -c $<
 
-main-alpaka: main_alpakaAll.o rawtodigi_alpaka.serial.o rawtodigi_alpaka.tbb.o rawtodigi_alpaka.cuda.o analyzer_alpaka.serial.o analyzer_alpaka.tbb.o analyzer_alpaka.cuda.o
+test-alpaka: $(BUILD)/main_alpakaAll.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/analyzer_alpaka.cuda.o
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA $(ALPAKA_FLAGS) -Xcompiler -pthread $(TBB_LD_FLAGS) -o $@ $+
 else
 alpaka:
@@ -158,7 +163,7 @@ alpaka:
 endif
 
 ifdef CUPLA_BASE
-cupla: main-cupla-cuda-async main-cupla-seq-seq-async main-cupla-seq-seq-sync main-cupla-tbb-seq-async main-cupla-omp2-seq-async
+cupla: test-cupla-cuda-async test-cupla-seq-seq-async test-cupla-seq-seq-sync test-cupla-tbb-seq-async test-cupla-omp2-seq-async
 	@echo -e $(GREEN)Cupla targets built$(RESET)
 
 cupla-debug: debug-cupla-cuda-async debug-cupla-seq-seq-async debug-cupla-seq-seq-sync debug-cupla-tbb-seq-async debug-cupla-omp2-seq-async
@@ -166,14 +171,14 @@ cupla-debug: debug-cupla-cuda-async debug-cupla-seq-seq-async debug-cupla-seq-se
 
 ifdef CUDA_BASE
 # Alpaka/cupla implementation, with the CUDA GPU async backend
-main-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+test-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 else
-main-cupla-cuda-async:
+test-cupla-cuda-async:
 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Cupla targets using CUDA will not be built
 
 debug-cupla-cuda-async:
@@ -182,28 +187,28 @@ debug-cupla-cuda-async:
 endif
 
 # Alpaka/cupla implementation, with the serial CPU async backend
-main-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+test-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 debug-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 # Alpaka/cupla implementation, with the serial CPU sync backend
-main-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+test-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 debug-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 # Alpaka/cupla implementation, with the TBB blocks backend
-main-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+test-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
 
 debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
 
 # Alpaka/cupla implementation, with the OpenMP 2 blocks backend
-main-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
+test-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o $@ main_cupla.cc rawtodigi_cupla.cc
 
 debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
@@ -219,21 +224,21 @@ cupla-debug:
 endif
 
 ifdef KOKKOS_BASE
-kokkos: main-kokkos-serial main-kokkos-openmp main-kokkos-cuda
+kokkos: test-kokkos-serial test-kokkos-openmp test-kokkos-cuda
 	@echo -e $(GREEN)Kokkos targets built$(RESET)
 
 kokkos-debug:
 
 # Kokkos implementation, serial backend
-main-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
+test-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 # Kokkos implementation, OpenMP backend
-main-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
+test-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 # Kokkos implementation, CUDA backend
-main-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
+test-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
 	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
 
 else
@@ -245,14 +250,14 @@ kokkos-debug:
 endif
 
 ifdef ONEAPI_CXX
-oneapi: main-oneapi
+oneapi: test-oneapi
 	@echo -e $(GREEN)oneAPI targets built$(RESET)
 
 oneapi-debug: debug-oneapi
 	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
 
 # oneAPI implementation
-main-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
+test-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
 	$(ONEAPI_CXX) -O2 -std=c++14 -DDIGI_ONEAPI -DDIGI_ONEAPI_WORKAROUND -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
