@@ -170,10 +170,10 @@ test-alpaka-cuda: $(BUILD)/main_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o $(
 	$(CXX) $(CXX_FLAGS) $(ALPAKA_FLAGS) -o $@ $+ $(CUDA_LD_FLAGS) -pthread
 
 # Alpaka implementation with run-time device choice
-$(BUILD)/main_alpakaAll.o: main_alpakaAll.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
+$(BUILD)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND -DALPAKA_ACC_GPU_CUDA_BACKEND $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-test-alpaka: $(BUILD)/main_alpakaAll.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/analyzer_alpaka.cuda.o $(BUILD)/alpaka.dlink.o
+test-alpaka: $(BUILD)/main_alpaka.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/analyzer_alpaka.cuda.o $(BUILD)/alpaka.dlink.o
 	$(CXX) $(CXX_FLAGS) -pthread -o $@ $+ $(CUDA_LD_FLAGS) $(TBB_LD_FLAGS) -pthread
 
 else
@@ -181,10 +181,10 @@ test-alpaka-cuda:
 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
 
 # Alpaka implementation with run-time device choice, with the CUDA backend disabled
-$(BUILD)/main_alpakaAll.o: main_alpakaAll.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
+$(BUILD)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(ALPAKA_FLAGS) -pthread -o $@ -c $<
 
-test-alpaka: $(BUILD)/main_alpakaAll.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o
+test-alpaka: $(BUILD)/main_alpaka.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o
 	$(CXX) $(CXX_FLAGS) -pthread -o $@ $+ $(TBB_LD_FLAGS) -pthread
 
 endif
