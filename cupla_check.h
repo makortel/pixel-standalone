@@ -11,11 +11,8 @@
 
 namespace cupla {
 
-  [[noreturn]] inline void abortOnCuplaError(const char* file,
-                                            int line,
-                                            const char* cmd,
-                                            const char* message,
-                                            const char* description = nullptr) {
+  [[noreturn]] inline void abortOnCuplaError(
+      const char* file, int line, const char* cmd, const char* message, const char* description = nullptr) {
     std::ostringstream out;
     out << "\n";
     out << file << ", line " << line << ":\n";

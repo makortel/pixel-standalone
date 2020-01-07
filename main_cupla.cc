@@ -1,88 +1,57 @@
-#include <chrono>
-#include <cstring>
 #include <iostream>
 #include <memory>
 
-/* Do NOT include other headers that use CUDA runtime functions or variables
- * before this include, because cupla renames CUDA host functions and device
- * built-in variables using macros and macro functions.
- * Do NOT include other specific includes such as `<cuda.h>`, etc.
- */
-#include <cuda_to_cupla.hpp>
-
-#include "cupla_check.h"
+#include "analyzer_cupla.h"
 #include "input.h"
 #include "modules.h"
 #include "output.h"
-#include "rawtodigi_cupla.h"
 
-namespace {
-  constexpr int NLOOPS = 100;
-}
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
-
-  int totaltime = 0;
-
   std::unique_ptr<Output> output;
-  for (int i = 0; i < NLOOPS; ++i) {
-    output = std::make_unique<Output>();
+  double totaltime = 0;
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    Input *input_d, *input_h;
-    CUPLA_CHECK(cudaMalloc((void **)&input_d, sizeof(Input)));
-    CUPLA_CHECK(cudaMallocHost((void **)&input_h, sizeof(Input)));
-    std::memcpy(input_h, &input, sizeof(Input));
+#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND && ! CUPLA_STREAM_ASYNC_ENABLED
+  output = std::make_unique<Output>();
+  std::cout << "\nRunning with the blocking CPU serial backend..." << std::endl;
+  cupla_seq_seq_sync::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+            << std::endl;
+#endif  // CUPLA_STREAM_SYNC_ENABLED && defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
 
-    Output *output_d, *output_h;
-    CUPLA_CHECK(cudaMalloc((void **)&output_d, sizeof(Output)));
-    CUPLA_CHECK(cudaMallocHost((void **)&output_h, sizeof(Output)));
-    output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
-#else   // ALPAKA_ACC_GPU_CUDA_ENABLED
-    Input *input_d = &input;
-    Output *output_d = output.get();
-#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND && CUPLA_STREAM_ASYNC_ENABLED
+  output = std::make_unique<Output>();
+  std::cout << "\nRunning with the non-blocking CPU serial backend..." << std::endl;
+  cupla_seq_seq_async::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+            << std::endl;
+#endif  // CUPLA_STREAM_ASYNC_ENABLED && defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
 
-    auto start = std::chrono::high_resolution_clock::now();
+#if defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND && CUPLA_STREAM_ASYNC_ENABLED
+  output = std::make_unique<Output>();
+  std::cout << "\nRunning with the non-blocking CPU TBB parallel backend..." << std::endl;
+  cupla_tbb_seq_async::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+            << std::endl;
+#endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    CUPLA_CHECK(cudaMemcpyAsync(input_d, input_h, sizeof(Input), cudaMemcpyHostToDevice, stream));
-    CUPLA_CHECK(cudaMemcpyAsync(output_d, output_h, sizeof(Output), cudaMemcpyHostToDevice, stream));
-#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#if defined ALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND && CUPLA_STREAM_ASYNC_ENABLED
+  output = std::make_unique<Output>();
+  std::cout << "\nRunning with the non-blocking CPU OpenMP 2 backend..." << std::endl;
+  cupla_omp2_seq_async::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+            << std::endl;
+#endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND
 
-    cupla::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, stream);
-
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    CUPLA_CHECK(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDeviceToHost, stream));
-#endif
-    CUPLA_CHECK(cudaStreamSynchronize(stream));
-    auto stop = std::chrono::high_resolution_clock::now();
-
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    output_h->err.set_data(output_h->err_d);
-    std::memcpy(output.get(), output_h, sizeof(Output));
-    output->err.set_data(output->err_d);
-
-    cudaFree(output_d);
-    cudaFree(input_d);
-    cudaFreeHost(output_h);
-    cudaFreeHost(input_h);
-#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
-
-    auto diff = stop - start;
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-    totaltime += time;
-  }
-
-  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-            << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
-
-  cudaStreamDestroy(stream);
+#if defined ALPAKA_ACC_GPU_CUDA_BACKEND && CUPLA_STREAM_ASYNC_ENABLED
+  output = std::make_unique<Output>();
+  std::cout << "\nRunning with the non-blocking GPU CUDA backend..." << std::endl;
+  cupla_cuda_async::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+            << std::endl;
+#endif  // ALPAKA_ACC_GPU_CUDA_BACKEND
 
   return 0;
 }
