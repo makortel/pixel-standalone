@@ -96,11 +96,11 @@ cuda: test-cuda
 cuda-debug: debug-cuda
 	@echo -e $(GREEN)CUDA debug targets built$(RESET)
 
-test-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu
+test-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h analyzer_cuda.cc analyzer_cuda.h
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu analyzer_cuda.cc
 
-debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
+debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h analyzer_cuda.cc analyzer_cuda.h
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu analyzer_cuda.cc
 else
 cuda:
 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), CUDA targets will not be built
