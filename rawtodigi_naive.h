@@ -1,6 +1,7 @@
 #ifndef rawtodigi_naive_h_
 #define rawtodigi_naive_h_
 
+#include <cstdio>
 #include <vector>
 
 #include "pixelgpudetails.h"

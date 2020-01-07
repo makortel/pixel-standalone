@@ -82,10 +82,10 @@ naive: test-naive
 naive-debug: debug-naive
 	@echo -e $(GREEN)naive debug targets built$(RESET)
 
-test-naive: main_naive.cc rawtodigi_naive.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc
+test-naive: main_naive.cc rawtodigi_naive.h analyzer_naive.cc analyzer_naive.h modules.h
+	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE -o $@ main_naive.cc analyzer_naive.cc
 
-debug-naive: main_naive.cc rawtodigi_naive.h
+debug-naive: main_naive.cc rawtodigi_naive.h analyzer_naive.cc analyzer_naive.h modules.h
 	$(CXX) $(CXX_FLAGS) -DDIGI_NAIVE $(CXX_DEBUG) -o $@ main_naive.cc
 
 ifdef CUDA_BASE
