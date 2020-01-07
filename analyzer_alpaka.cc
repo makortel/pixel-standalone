@@ -24,6 +24,8 @@ namespace ALPAKA_ARCHITECTURE {
     totaltime = 0.;
 
     for (int i = 0; i < NLOOPS; i++) {
+      output = Output();
+
       using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, const Input, Dim, Idx>;
       ViewInput input_hBuf(&input, host, size);
 
