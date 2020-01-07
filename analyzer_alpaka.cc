@@ -12,7 +12,7 @@ namespace {
   constexpr int NLOOPS = 100;
 }
 
-namespace ALPAKA_ARCHITECTURE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void analyze(Input const& input, Output& output, double& totaltime) {
     const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
@@ -71,4 +71,4 @@ namespace ALPAKA_ARCHITECTURE {
     totaltime /= NLOOPS;
   }
 
-}  // namespace ALPAKA_ARCHITECTURE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE

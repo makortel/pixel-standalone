@@ -1,9 +1,13 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "GPUSimpleVector.h"
+#include "input.h"
+#include "output.h"
+#include "pixelgpudetails.h"
 #include "rawtodigi_alpaka.h"
 
-namespace ALPAKA_ARCHITECTURE {
+namespace ALPAKA_ARCHITECTURE_NAMESPACE {
 
   class Packing {
   public:
@@ -60,19 +64,19 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
+  inline uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
+  inline uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  inline uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
 
   ALPAKA_FN_HOST_ACC
-  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  inline bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
   ALPAKA_FN_HOST_ACC
-  bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
+  inline bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
     constexpr uint32_t numRowsInRoc = 80;
     constexpr uint32_t numColsInRoc = 52;
 
@@ -81,13 +85,13 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  inline bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
   ALPAKA_FN_HOST_ACC
-  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU* cablingMap,
-                                     uint8_t fed,
-                                     uint32_t link,
-                                     uint32_t roc) {
+  inline pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU* cablingMap,
+                                            uint8_t fed,
+                                            uint32_t link,
+                                            uint32_t roc) {
     uint32_t index =
         fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = {
@@ -96,7 +100,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  pixelgpudetails::Pixel frameConversion(
+  inline pixelgpudetails::Pixel frameConversion(
       bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
     int slopeRow = 0, slopeCol = 0;
     int rowOffset = 0, colOffset = 0;
@@ -165,7 +169,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+  inline uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     // debug = true;
 
     if (debug) {
@@ -199,11 +203,11 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getErrRawID(uint8_t fedId,
-                       uint32_t errWord,
-                       uint32_t errorType,
-                       const SiPixelFedCablingMapGPU* cablingMap,
-                       bool debug = false) {
+  inline uint32_t getErrRawID(uint8_t fedId,
+                              uint32_t errWord,
+                              uint32_t errorType,
+                              const SiPixelFedCablingMapGPU* cablingMap,
+                              bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -277,7 +281,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint8_t checkROC(
+  inline uint8_t checkROC(
       uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU* cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
@@ -482,8 +486,12 @@ namespace ALPAKA_ARCHITECTURE {
 
   }  // end of Raw to Digi kernel
 
-  // explicit template instantiation definition for ALPAKA_ARCHITECTURE::Acc
-  template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(
-      Acc const& acc, const Input* input, Output* output, bool useQualityInfo, bool includeErrors, bool debug) const;
+  // explicit template instantiation definition for ALPAKA_ACCELERATOR_NAMESPACE::Acc
+  template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(ALPAKA_ACCELERATOR_NAMESPACE::Acc const& acc,
+                                                           const Input* input,
+                                                           Output* output,
+                                                           bool useQualityInfo,
+                                                           bool includeErrors,
+                                                           bool debug) const;
 
-}  // namespace ALPAKA_ARCHITECTURE
+}  // namespace ALPAKA_ARCHITECTURE_NAMESPACE

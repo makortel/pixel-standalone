@@ -26,7 +26,8 @@ namespace alpaka_cuda_async {
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
 #ifdef ALPAKA_ACC_GPU_CUDA_BACKEND
-#define ALPAKA_ARCHITECTURE alpaka_cuda_async
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cuda
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_cuda_async
 #endif  // ALPAKA_ACC_GPU_CUDA_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
@@ -42,7 +43,8 @@ namespace alpaka_serial_sync {
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
-#define ALPAKA_ARCHITECTURE alpaka_serial_sync
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_serial_sync
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
@@ -58,7 +60,8 @@ namespace alpaka_tbb_async {
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
-#define ALPAKA_ARCHITECTURE alpaka_tbb_async
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_tbb_async
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
 
 #endif  // alpakaConfig_h_
