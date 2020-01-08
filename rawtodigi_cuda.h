@@ -3,20 +3,13 @@
 
 #include <cuda_runtime.h>
 
-#include "GPUSimpleVector.h"
-#include "input.h"
-#include "output.h"
-#include "pixelgpudetails.h"
+class Input;
+class Output;
 
 namespace cuda {
 
-  void rawtodigi(const Input *input_d,
-                 Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo,
-                 bool includeErrors,
-                 bool debug,
-                 cudaStream_t stream);
+  __global__ void rawtodigi_kernel(
+      const Input* input, Output* output, bool useQualityInfo, bool includeErrors, bool debug);
 
 }  // namespace cuda
 

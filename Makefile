@@ -28,7 +28,7 @@ CXX_DEBUG := -g
 
 # CUDA compiler
 NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
-NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35
+NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70
 NVCC_DEBUG := -g -lineinfo
 
 # boost flags
@@ -96,8 +96,17 @@ cuda: test-cuda
 cuda-debug: debug-cuda
 	@echo -e $(GREEN)CUDA debug targets built$(RESET)
 
-test-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu
+$(BUILD)/rawtodigi_cuda.o: rawtodigi_cuda.cu | $(BUILD)
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA -o $@ -x cu -c $<
+
+$(BUILD)/analyzer_cuda.o: analyzer_cuda.cc | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUDA -I$(CUDA_BASE)/include -o $@ -c $<
+
+$(BUILD)/main_cuda.o: main_cuda.cc | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUDA -I$(CUDA_BASE)/include -o $@ -c $<
+
+test-cuda: $(BUILD)/main_cuda.o $(BUILD)/analyzer_cuda.o $(BUILD)/rawtodigi_cuda.o
+	$(CXX) $(CXX_FLAGS) -o $@ $+ -L$(CUDA_BASE)/lib64 -lcudart -lcuda
 
 debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
