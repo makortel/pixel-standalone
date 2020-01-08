@@ -8,7 +8,7 @@
  */
 #include <cuda_to_cupla.hpp>
 
-#include "cudaCheck.h"
+#include "cupla_check.h"
 #include "rawtodigi_cupla.h"
 
 namespace cupla {
@@ -501,7 +501,7 @@ namespace cupla {
 
     CUPLA_KERNEL_OPTI(rawtodigi_kernel)
     (blocks, threadsPerBlock, 0, stream)(input_d, output_d, useQualityInfo, includeErrors, debug);
-    cudaCheck(cudaGetLastError());
+    CUPLA_CHECK(cudaGetLastError());
   }
 
 }  // end namespace cupla

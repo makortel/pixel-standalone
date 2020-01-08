@@ -10,7 +10,7 @@
  */
 #include <cuda_to_cupla.hpp>
 
-#include "cudaCheck.h"
+#include "cupla_check.h"
 #include "input.h"
 #include "modules.h"
 #include "output.h"
@@ -35,13 +35,13 @@ int main(int argc, char **argv) {
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     Input *input_d, *input_h;
-    cudaCheck(cudaMalloc((void **)&input_d, sizeof(Input)));
-    cudaCheck(cudaMallocHost((void **)&input_h, sizeof(Input)));
+    CUPLA_CHECK(cudaMalloc((void **)&input_d, sizeof(Input)));
+    CUPLA_CHECK(cudaMallocHost((void **)&input_h, sizeof(Input)));
     std::memcpy(input_h, &input, sizeof(Input));
 
     Output *output_d, *output_h;
-    cudaCheck(cudaMalloc((void **)&output_d, sizeof(Output)));
-    cudaCheck(cudaMallocHost((void **)&output_h, sizeof(Output)));
+    CUPLA_CHECK(cudaMalloc((void **)&output_d, sizeof(Output)));
+    CUPLA_CHECK(cudaMallocHost((void **)&output_h, sizeof(Output)));
     output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
 #else   // ALPAKA_ACC_GPU_CUDA_ENABLED
     Input *input_d = &input;
@@ -51,16 +51,16 @@ int main(int argc, char **argv) {
     auto start = std::chrono::high_resolution_clock::now();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    cudaCheck(cudaMemcpyAsync(input_d, input_h, sizeof(Input), cudaMemcpyHostToDevice, stream));
-    cudaCheck(cudaMemcpyAsync(output_d, output_h, sizeof(Output), cudaMemcpyHostToDevice, stream));
+    CUPLA_CHECK(cudaMemcpyAsync(input_d, input_h, sizeof(Input), cudaMemcpyHostToDevice, stream));
+    CUPLA_CHECK(cudaMemcpyAsync(output_d, output_h, sizeof(Output), cudaMemcpyHostToDevice, stream));
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
     cupla::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, stream);
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    cudaCheck(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDeviceToHost, stream));
+    CUPLA_CHECK(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDeviceToHost, stream));
 #endif
-    cudaCheck(cudaStreamSynchronize(stream));
+    CUPLA_CHECK(cudaStreamSynchronize(stream));
     auto stop = std::chrono::high_resolution_clock::now();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
