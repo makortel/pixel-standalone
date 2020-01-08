@@ -28,7 +28,7 @@ CXX_DEBUG := -g
 
 # CUDA compiler
 NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
-NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35
+NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70
 NVCC_DEBUG := -g -lineinfo
 
 # boost flags
