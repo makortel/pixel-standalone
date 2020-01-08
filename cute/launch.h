@@ -1,14 +1,14 @@
-#ifndef launch_h_
-#define launch_h_
+#ifndef cute_launch_h
+#define cute_launch_h
 
 #include <tuple>
 
 #include <cuda_runtime.h>
 
-#include "cudaCheck.h"
+#include "check.h"
 
 /*
- * `launch` and `cudautils::launch_cooperative` are wrappers around
+ * `cute::launch` and `cute::launch_cooperative` are wrappers around
  * the CUDA Runtime API calls to setup and call a CUDA kernel from the host.
  *
  * `kernel` should be a pointer to a __global__ void(...) function.
@@ -23,8 +23,8 @@
  *  the exact type.
  *
  *  Unlike the `kernel<<<...>>>(...)` syntax and the `cuda::launch(...)` 
- *  implementation from the CUDA API Wrappers, `launch(...)` and 
- *  `launch_cooperative` can be called from standard C++ host code.
+ *  implementation from the CUDA API Wrappers, `cute::launch(...)` and 
+ *  `cute::launch_cooperative` can be called from standard C++ host code.
  *
  *  Possible optimisations
  *
@@ -41,6 +41,8 @@
  *      avoid making a temporary copy of the parameters when they match the
  *      kernel signature.
  */
+
+namespace cute {
 
   struct LaunchParameters {
     dim3 gridDim;
@@ -91,7 +93,7 @@
   // wrappers for cudaLaunchKernel
 
   inline void launch(void (*kernel)(), LaunchParameters config) {
-    cudaCheck(cudaLaunchKernel(
+    CUTE_CHECK(cudaLaunchKernel(
         (const void*)kernel, config.gridDim, config.blockDim, nullptr, config.sharedMem, config.stream));
   }
 
@@ -109,14 +111,14 @@
     void const* pointers[size];
 
     detail::pointer_setter<size>()(pointers, args_copy);
-    cudaCheck(cudaLaunchKernel(
+    CUTE_CHECK(cudaLaunchKernel(
         (const void*)kernel, config.gridDim, config.blockDim, (void**)pointers, config.sharedMem, config.stream));
   }
 
   // wrappers for cudaLaunchCooperativeKernel
 
   inline void launch_cooperative(void (*kernel)(), LaunchParameters config) {
-    cudaCheck(cudaLaunchCooperativeKernel(
+    CUTE_CHECK(cudaLaunchCooperativeKernel(
         (const void*)kernel, config.gridDim, config.blockDim, nullptr, config.sharedMem, config.stream));
   }
 
@@ -134,8 +136,10 @@
     void const* pointers[size];
 
     detail::pointer_setter<size>()(pointers, args_copy);
-    cudaCheck(cudaLaunchCooperativeKernel(
+    CUTE_CHECK(cudaLaunchCooperativeKernel(
         (const void*)kernel, config.gridDim, config.blockDim, (void**)pointers, config.sharedMem, config.stream));
   }
 
-#endif  // launch_h_
+}  // namespace cute
+
+#endif  // cute_launch_h

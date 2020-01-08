@@ -5,9 +5,7 @@
 #include <cuda.h>
 
 #include "GPUSimpleVector.h"
-#include "cudaCheck.h"
 #include "input.h"
-#include "launch.h"
 #include "output.h"
 #include "rawtodigi_cuda.h"
 
