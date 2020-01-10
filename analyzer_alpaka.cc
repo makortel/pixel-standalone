@@ -26,6 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     for (int i = 0; i < NLOOPS; i++) {
       output = Output();
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, const Input, Dim, Idx>;
       ViewInput input_hBuf(&input, host, size);
 
@@ -38,11 +39,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(device, size));
       Output* output_d = alpaka::mem::view::getPtrNative(output_dBuf);
       output.err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
+#else
+      Input const* input_d = &input;
+      Output* output_d = &output;
+#endif
 
       auto start = std::chrono::high_resolution_clock::now();
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       alpaka::mem::view::copy(queue, input_dBuf, input_hBuf, size);
       alpaka::mem::view::copy(queue, output_dBuf, output_hBuf, size);
+#endif
 
       Vec elementsPerThread(Vec::all(1));
       Vec threadsPerBlock(Vec::all(512));
@@ -58,7 +65,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           queue,
           alpaka::kernel::createTaskKernel<Acc>(workDiv, rawtodigi_kernel(), input_d, output_d, true, true, false));
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, size);
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
       alpaka::wait::wait(queue);
 
