@@ -2,20 +2,34 @@
 #define rawtodigi_alpaka_h_
 
 #include "alpakaConfig.h"
-#include "input.h"
-#include "output.h"
-#include "pixelgpudetails.h"
 
-namespace ALPAKA_ARCHITECTURE {
+class Input;
+class Output;
 
-  void rawtodigi(const Input *input_d,
-                 Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo,
-                 bool includeErrors,
-                 bool debug,
-                 Queue queue);
+namespace ALPAKA_ARCHITECTURE_NAMESPACE {
 
-}  // namespace ALPAKA_ARCHITECTURE
+  struct rawtodigi_kernel {
+    template <typename T_Acc>
+    ALPAKA_FN_ACC void operator()(T_Acc const& acc,
+                                  const Input* input,
+                                  Output* output,
+                                  bool useQualityInfo,
+                                  bool includeErrors,
+                                  bool debug) const;
+  };
+
+  // explicit template instantiation declaration for ALPAKA_ACCELERATOR_NAMESPACE::Acc
+  extern template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(ALPAKA_ACCELERATOR_NAMESPACE::Acc const& acc,
+                                                                  const Input* input,
+                                                                  Output* output,
+                                                                  bool useQualityInfo,
+                                                                  bool includeErrors,
+                                                                  bool debug) const;
+
+}  // namespace ALPAKA_ARCHITECTURE_NAMESPACE
+
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+  using namespace ALPAKA_ARCHITECTURE_NAMESPACE;
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // rawtodigi_alpaka_h_

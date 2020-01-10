@@ -1,9 +1,13 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "GPUSimpleVector.h"
+#include "input.h"
+#include "output.h"
+#include "pixelgpudetails.h"
 #include "rawtodigi_alpaka.h"
 
-namespace ALPAKA_ARCHITECTURE {
+namespace ALPAKA_ARCHITECTURE_NAMESPACE {
 
   class Packing {
   public:
@@ -60,19 +64,19 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
+  inline uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
+  inline uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  inline uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
 
   ALPAKA_FN_HOST_ACC
-  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  inline bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
   ALPAKA_FN_HOST_ACC
-  bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
+  inline bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
     constexpr uint32_t numRowsInRoc = 80;
     constexpr uint32_t numColsInRoc = 52;
 
@@ -81,13 +85,13 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  inline bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
   ALPAKA_FN_HOST_ACC
-  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU* cablingMap,
-                                     uint8_t fed,
-                                     uint32_t link,
-                                     uint32_t roc) {
+  inline pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU* cablingMap,
+                                            uint8_t fed,
+                                            uint32_t link,
+                                            uint32_t roc) {
     uint32_t index =
         fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = {
@@ -96,7 +100,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  pixelgpudetails::Pixel frameConversion(
+  inline pixelgpudetails::Pixel frameConversion(
       bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
     int slopeRow = 0, slopeCol = 0;
     int rowOffset = 0, colOffset = 0;
@@ -165,7 +169,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+  inline uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     // debug = true;
 
     if (debug) {
@@ -199,11 +203,11 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint32_t getErrRawID(uint8_t fedId,
-                       uint32_t errWord,
-                       uint32_t errorType,
-                       const SiPixelFedCablingMapGPU* cablingMap,
-                       bool debug = false) {
+  inline uint32_t getErrRawID(uint8_t fedId,
+                              uint32_t errWord,
+                              uint32_t errorType,
+                              const SiPixelFedCablingMapGPU* cablingMap,
+                              bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -277,7 +281,7 @@ namespace ALPAKA_ARCHITECTURE {
   }
 
   ALPAKA_FN_HOST_ACC
-  uint8_t checkROC(
+  inline uint8_t checkROC(
       uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU* cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
@@ -354,163 +358,140 @@ namespace ALPAKA_ARCHITECTURE {
     return errorFound ? errorType : 0;
   }
 
-  template <typename TIdx>
-  struct rawtodigi_kernel {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(T_Acc const& acc,
-                                  const Input* input,
-                                  Output* output,
-                                  bool useQualityInfo,
-                                  bool includeErrors,
-                                  bool debug) const {
-      const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
-      const uint32_t wordCounter = input->wordCounter;
-      const uint32_t* word = input->word;
-      const uint8_t* fedIds = input->fedId;
-      uint16_t* xx = output->xx;
-      uint16_t* yy = output->yy;
-      uint16_t* adc = output->adc;
-      uint32_t* pdigi = output->digi;
-      uint32_t* rawIdArr = output->rawIdArr;
-      uint16_t* moduleId = output->moduleInd;
-      GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
+  template <typename T_Acc>
+  ALPAKA_FN_ACC void rawtodigi_kernel::operator()(
+      T_Acc const& acc, const Input* input, Output* output, bool useQualityInfo, bool includeErrors, bool debug) const {
+    const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
+    const uint32_t wordCounter = input->wordCounter;
+    const uint32_t* word = input->word;
+    const uint8_t* fedIds = input->fedId;
+    uint16_t* xx = output->xx;
+    uint16_t* yy = output->yy;
+    uint16_t* adc = output->adc;
+    uint32_t* pdigi = output->digi;
+    uint32_t* rawIdArr = output->rawIdArr;
+    uint16_t* moduleId = output->moduleInd;
+    GPU::SimpleVector<PixelErrorCompact>* err = &output->err;
 
-      uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const elemDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+    uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+    uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+    uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const elemDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-      int32_t first = (blockThreadIdx + gridBlockIdx * blockDimension) * elemDimension;
-      for (uint32_t iloop(first); iloop < wordCounter; iloop += gridDimension * blockDimension * elemDimension) {
-        int32_t last = std::min(iloop + elemDimension, wordCounter);
-        for (auto gIndex = iloop; gIndex < last; ++gIndex) {
-          xx[gIndex] = 0;
-          yy[gIndex] = 0;
-          adc[gIndex] = 0;
-          bool skipROC = false;
+    int32_t first = (blockThreadIdx + gridBlockIdx * blockDimension) * elemDimension;
+    for (uint32_t iloop(first); iloop < wordCounter; iloop += gridDimension * blockDimension * elemDimension) {
+      int32_t last = std::min(iloop + elemDimension, wordCounter);
+      for (auto gIndex = iloop; gIndex < last; ++gIndex) {
+        xx[gIndex] = 0;
+        yy[gIndex] = 0;
+        adc[gIndex] = 0;
+        bool skipROC = false;
 
-          uint8_t fedId = fedIds[gIndex / 2];  // +1200;
+        uint8_t fedId = fedIds[gIndex / 2];  // +1200;
 
-          // initialize (too many coninue below)
-          pdigi[gIndex] = 0;
-          rawIdArr[gIndex] = 0;
-          moduleId[gIndex] = 9999;
+        // initialize (too many coninue below)
+        pdigi[gIndex] = 0;
+        rawIdArr[gIndex] = 0;
+        moduleId[gIndex] = 9999;
 
-          uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
-          if (ww == 0) {
-            // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
+        uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
+        if (ww == 0) {
+          // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
+          continue;
+        }
+
+        uint32_t link = getLink(ww);  // Extract link
+        uint32_t roc = getRoc(ww);    // Extract Roc in link
+        pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
+
+        uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
+        skipROC = (roc < pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
+        if (includeErrors and skipROC) {
+          uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
+          err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
+          continue;
+        }
+
+        uint32_t rawId = detId.RawId;
+        uint32_t rocIdInDetUnit = detId.rocInDet;
+        bool barrel = isBarrel(rawId);
+
+        uint32_t index =
+            fedId * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
+        if (useQualityInfo) {
+          skipROC = cablingMap->badRocs[index];
+          if (skipROC)
             continue;
-          }
+        }
 
-          uint32_t link = getLink(ww);  // Extract link
-          uint32_t roc = getRoc(ww);    // Extract Roc in link
-          pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
+        uint32_t layer = 0;                   //, ladder =0;
+        int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
 
-          uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
-          skipROC = (roc < pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
-          if (includeErrors and skipROC) {
-            uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
-            err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
-            continue;
-          }
+        if (barrel) {
+          layer = (rawId >> pixelgpudetails::layerStartBit) & pixelgpudetails::layerMask;
+          module = (rawId >> pixelgpudetails::moduleStartBit) & pixelgpudetails::moduleMask;
+          side = (module < 5) ? -1 : 1;
+        } else {
+          // endcap ids
+          layer = 0;
+          panel = (rawId >> pixelgpudetails::panelStartBit) & pixelgpudetails::panelMask;
+          //disk  = (rawId >> diskStartBit_) & diskMask_;
+          side = (panel == 1) ? -1 : 1;
+          //blade = (rawId >> bladeStartBit_) & bladeMask_;
+        }
 
-          uint32_t rawId = detId.RawId;
-          uint32_t rocIdInDetUnit = detId.rocInDet;
-          bool barrel = isBarrel(rawId);
-
-          uint32_t index = fedId * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC +
-                           (link - 1) * pixelgpudetails::MAX_ROC + roc;
-          if (useQualityInfo) {
-            skipROC = cablingMap->badRocs[index];
-            if (skipROC)
-              continue;
-          }
-
-          uint32_t layer = 0;                   //, ladder =0;
-          int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
-
-          if (barrel) {
-            layer = (rawId >> pixelgpudetails::layerStartBit) & pixelgpudetails::layerMask;
-            module = (rawId >> pixelgpudetails::moduleStartBit) & pixelgpudetails::moduleMask;
-            side = (module < 5) ? -1 : 1;
-          } else {
-            // endcap ids
-            layer = 0;
-            panel = (rawId >> pixelgpudetails::panelStartBit) & pixelgpudetails::panelMask;
-            //disk  = (rawId >> diskStartBit_) & diskMask_;
-            side = (panel == 1) ? -1 : 1;
-            //blade = (rawId >> bladeStartBit_) & bladeMask_;
-          }
-
-          // ***special case of layer to 1 be handled here
-          pixelgpudetails::Pixel localPix;
-          if (layer == 1) {
-            uint32_t col = (ww >> pixelgpudetails::COL_shift) & pixelgpudetails::COL_mask;
-            uint32_t row = (ww >> pixelgpudetails::ROW_shift) & pixelgpudetails::ROW_mask;
-            localPix.row = row;
-            localPix.col = col;
-            if (includeErrors) {
-              if (not rocRowColIsValid(row, col)) {
-                uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
-                err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
-                if (debug)
-                  printf("BPIX1  Error status: %i\n", error);
-                continue;
-              }
-            }
-          } else {
-            // ***conversion rules for dcol and pxid
-            uint32_t dcol = (ww >> pixelgpudetails::DCOL_shift) & pixelgpudetails::DCOL_mask;
-            uint32_t pxid = (ww >> pixelgpudetails::PXID_shift) & pixelgpudetails::PXID_mask;
-            uint32_t row = pixelgpudetails::numRowsInRoc - pxid / 2;
-            uint32_t col = dcol * 2 + pxid % 2;
-            localPix.row = row;
-            localPix.col = col;
-            if (includeErrors and not dcolIsValid(dcol, pxid)) {
-              uint8_t error = conversionError(fedId, 3, debug);
+        // ***special case of layer to 1 be handled here
+        pixelgpudetails::Pixel localPix;
+        if (layer == 1) {
+          uint32_t col = (ww >> pixelgpudetails::COL_shift) & pixelgpudetails::COL_mask;
+          uint32_t row = (ww >> pixelgpudetails::ROW_shift) & pixelgpudetails::ROW_mask;
+          localPix.row = row;
+          localPix.col = col;
+          if (includeErrors) {
+            if (not rocRowColIsValid(row, col)) {
+              uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
               err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
               if (debug)
-                printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
+                printf("BPIX1  Error status: %i\n", error);
               continue;
             }
           }
-
-          pixelgpudetails::Pixel globalPix = frameConversion(barrel, side, layer, rocIdInDetUnit, localPix);
-          xx[gIndex] = globalPix.row;  // origin shifting by 1 0-159
-          yy[gIndex] = globalPix.col;  // origin shifting by 1 0-415
-          adc[gIndex] = getADC(ww);
-          pdigi[gIndex] = pack(globalPix.row, globalPix.col, adc[gIndex]);
-          moduleId[gIndex] = detId.moduleId;
-          rawIdArr[gIndex] = rawId;
+        } else {
+          // ***conversion rules for dcol and pxid
+          uint32_t dcol = (ww >> pixelgpudetails::DCOL_shift) & pixelgpudetails::DCOL_mask;
+          uint32_t pxid = (ww >> pixelgpudetails::PXID_shift) & pixelgpudetails::PXID_mask;
+          uint32_t row = pixelgpudetails::numRowsInRoc - pxid / 2;
+          uint32_t col = dcol * 2 + pxid % 2;
+          localPix.row = row;
+          localPix.col = col;
+          if (includeErrors and not dcolIsValid(dcol, pxid)) {
+            uint8_t error = conversionError(fedId, 3, debug);
+            err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
+            if (debug)
+              printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
+            continue;
+          }
         }
-      }  // end of loop (gIndex < end)
 
-    }  // end of Raw to Digi kernel
-  };
+        pixelgpudetails::Pixel globalPix = frameConversion(barrel, side, layer, rocIdInDetUnit, localPix);
+        xx[gIndex] = globalPix.row;  // origin shifting by 1 0-159
+        yy[gIndex] = globalPix.col;  // origin shifting by 1 0-415
+        adc[gIndex] = getADC(ww);
+        pdigi[gIndex] = pack(globalPix.row, globalPix.col, adc[gIndex]);
+        moduleId[gIndex] = detId.moduleId;
+        rawIdArr[gIndex] = rawId;
+      }
+    }  // end of loop (gIndex < end)
 
-  void rawtodigi(const Input* input_d,
-                 Output* output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo,
-                 bool includeErrors,
-                 bool debug,
-                 Queue queue) {
-    Vec elementsPerThread(Vec::all(static_cast<Idx>(1)));
-    Vec threadsPerBlock(Vec::all(static_cast<Idx>(512)));
-    Vec blocksPerGrid(Vec::all(static_cast<Idx>((wordCounter + 512 - 1) / 512)));
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
-    // A block for the serial accelerator can only ever have one single thread!
-    std::swap(threadsPerBlock, elementsPerThread);
-#endif
-    const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+  }  // end of Raw to Digi kernel
 
-    rawtodigi_kernel<Idx> kernel;
+  // explicit template instantiation definition for ALPAKA_ACCELERATOR_NAMESPACE::Acc
+  template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(ALPAKA_ACCELERATOR_NAMESPACE::Acc const& acc,
+                                                           const Input* input,
+                                                           Output* output,
+                                                           bool useQualityInfo,
+                                                           bool includeErrors,
+                                                           bool debug) const;
 
-    auto const taskRawToDigiKernel(alpaka::kernel::createTaskKernel<Acc>(
-        workDiv, kernel, input_d, output_d, useQualityInfo, includeErrors, debug));
-
-    alpaka::queue::enqueue(queue, taskRawToDigiKernel);
-  }
-
-}  // namespace ALPAKA_ARCHITECTURE
+}  // namespace ALPAKA_ARCHITECTURE_NAMESPACE

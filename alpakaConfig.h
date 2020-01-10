@@ -3,58 +3,65 @@
 
 #include <alpaka/alpaka.hpp>
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#define ALPAKA_ARCHITECTURE alpaka_cuda_async
-namespace alpaka_cuda_async {
+namespace alpaka_common {
   using Dim = alpaka::dim::DimInt<1u>;
-  using Idx = uint64_t;
-  using Extent = uint64_t;
-  using Acc = alpaka::acc::AccGpuCudaRt<Dim, Extent>;
+  using Idx = uint32_t;
+  using Extent = uint32_t;
   using DevHost = alpaka::dev::DevCpu;
-  using DevAcc = alpaka::dev::Dev<Acc>;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
-  using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
-  using Queue = alpaka::queue::QueueCudaRtNonBlocking;
   using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
   using Vec = alpaka::vec::Vec<Dim, Idx>;
+}  // namespace alpaka_common
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#define ALPAKA_ACC_GPU_CUDA_BACKEND
+namespace alpaka_cuda_async {
+  using namespace alpaka_common;
+  using Acc = alpaka::acc::AccGpuCudaRt<Dim, Extent>;
+  using DevAcc = alpaka::dev::Dev<Acc>;
+  using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using Queue = alpaka::queue::QueueCudaRtNonBlocking;
 }  // namespace alpaka_cuda_async
 
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
+#ifdef ALPAKA_ACC_GPU_CUDA_BACKEND
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cuda
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_cuda_async
+#endif  // ALPAKA_ACC_GPU_CUDA_BACKEND
+
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
-#define ALPAKA_ARCHITECTURE alpaka_serial_sync
+#define ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
 namespace alpaka_serial_sync {
-  using Dim = alpaka::dim::DimInt<1u>;
-  using Idx = uint64_t;
-  using Extent = uint64_t;
+  using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuSerial<Dim, Extent>;
-  using DevHost = alpaka::dev::DevCpu;
   using DevAcc = alpaka::dev::Dev<Acc>;
-  using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
   using Queue = alpaka::queue::QueueCpuBlocking;
-  using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
-  using Vec = alpaka::vec::Vec<Dim, Idx>;
 }  // namespace alpaka_serial_sync
 
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_serial_sync
+#endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND
+
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
-#define ALPAKA_ARCHITECTURE alpaka_tbb_async
+#define ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
 namespace alpaka_tbb_async {
-  using Dim = alpaka::dim::DimInt<1u>;
-  using Idx = uint64_t;
-  using Extent = uint64_t;
+  using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuTbbBlocks<Dim, Extent>;
-  using DevHost = alpaka::dev::DevCpu;
   using DevAcc = alpaka::dev::Dev<Acc>;
-  using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
   using Queue = alpaka::queue::QueueCpuNonBlocking;
-  using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
-  using Vec = alpaka::vec::Vec<Dim, Idx>;
 }  // namespace alpaka_tbb_async
 
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_tbb_async
+#endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND
 
 #endif  // alpakaConfig_h_
