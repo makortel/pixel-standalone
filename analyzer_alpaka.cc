@@ -27,18 +27,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       output = Output();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      using ViewInput = alpaka::mem::view::ViewPlainPtr<DevHost, const Input, Dim, Idx>;
-      ViewInput input_hBuf(&input, host, size);
-
-      auto input_dBuf(alpaka::mem::buf::alloc<Input, Idx>(device, size));
+      auto input_dBuf = alpaka::mem::buf::alloc<Input, Idx>(device, size);
       Input* input_d = alpaka::mem::view::getPtrNative(input_dBuf);
+      auto input_hBuf = alpaka::mem::buf::alloc<Input, Idx>(host, size);
+      alpaka::mem::buf::prepareForAsyncCopy(input_hBuf);
+      Input* input_h = alpaka::mem::view::getPtrNative(input_hBuf);
+      std::memcpy(input_h, &input, sizeof(Input));
 
-      using ViewOutput = alpaka::mem::view::ViewPlainPtr<DevHost, Output, Dim, Idx>;
-      ViewOutput output_hBuf(&output, host, size);
-
-      auto output_dBuf(alpaka::mem::buf::alloc<Output, Idx>(device, size));
+      auto output_dBuf = alpaka::mem::buf::alloc<Output, Idx>(device, size);
       Output* output_d = alpaka::mem::view::getPtrNative(output_dBuf);
-      output.err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
+      auto output_hBuf = alpaka::mem::buf::alloc<Output, Idx>(host, size);
+      alpaka::mem::buf::prepareForAsyncCopy(output_hBuf);
+      Output* output_h = alpaka::mem::view::getPtrNative(output_hBuf);
+      output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
 #else
       Input const* input_d = &input;
       Output* output_d = &output;
@@ -72,6 +73,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait::wait(queue);
 
       auto stop = std::chrono::high_resolution_clock::now();
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+      output_h->err.set_data(output_h->err_d);
+      std::memcpy(&output, output_h, sizeof(Output));
+      output.err.set_data(output.err_d);
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
       auto diff = stop - start;
       totaltime += std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
