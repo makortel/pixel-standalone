@@ -8,21 +8,29 @@
  */
 #include <cuda_to_cupla.hpp>
 
-#include "GPUSimpleVector.h"
-#include "input.h"
-#include "output.h"
-#include "pixelgpudetails.h"
+class Input;
+class Output;
 
-namespace cupla {
+namespace CUPLA_ACCELERATOR_NAMESPACE {
 
-  void rawtodigi(const Input *input_d,
-                 Output *output_d,
-                 const uint32_t wordCounter,
-                 bool useQualityInfo,
-                 bool includeErrors,
-                 bool debug,
-                 cudaStream_t stream);
+  struct rawtodigi_kernel {
+    template <typename T_Acc>
+    ALPAKA_FN_ACC void operator()(T_Acc const& acc,
+                                  const Input* input,
+                                  Output* output,
+                                  bool useQualityInfo,
+                                  bool includeErrors,
+                                  bool debug) const;
+  };
 
-}  // namespace cupla
+  // explicit template instantiation declaration for cupla::CUPLA_ACCELERATOR_NAMESPACE::Acc
+  extern template ALPAKA_FN_ACC void rawtodigi_kernel::operator()(cupla::CUPLA_ACCELERATOR_NAMESPACE::Acc const& acc,
+                                                                  const Input* input,
+                                                                  Output* output,
+                                                                  bool useQualityInfo,
+                                                                  bool includeErrors,
+                                                                  bool debug) const;
+
+}  // namespace CUPLA_ACCELERATOR_NAMESPACE
 
 #endif  // rawtodigi_cupla_h_

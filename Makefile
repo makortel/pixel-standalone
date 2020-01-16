@@ -117,7 +117,7 @@ test-cuda: $(BUILD)/main_cuda.o $(BUILD)/analyzer_cuda.o $(BUILD)/rawtodigi_cuda
 	$(CXX) $(CXX_FLAGS) -o $@ $+ -L$(CUDA_BASE)/lib64 -lcudart -lcuda
 
 debug-cuda: main_cuda.cc rawtodigi_cuda.cu rawtodigi_cuda.h
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUDA $(NVCC_DEBUG) -o $@ main_cuda.cc rawtodigi_cuda.cu
+	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_CUDA -o $@ main_cuda.cc rawtodigi_cuda.cu
 else
 cuda:
 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), CUDA targets will not be built
@@ -265,12 +265,36 @@ cupla-debug: debug-cupla-cuda-async debug-cupla-seq-seq-async debug-cupla-seq-se
 	@echo -e $(GREEN)Cupla debug targets built$(RESET)
 
 ifdef CUDA_BASE
-# Alpaka/cupla implementation, with the CUDA GPU async backend
-test-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Alpaka/Cupla implementation, with the CUDA GPU async backend
+$(BUILD)/analyzer_cupla.cuda.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(BUILD)
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -dc $<
 
-debug-cupla-cuda-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(NVCC) -x cu -w $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(NVCC_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+$(BUILD)/rawtodigi_cupla.cuda.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(BUILD)
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -dc $<
+
+$(BUILD)/cupla.dlink.o: $(BUILD)/analyzer_cupla.cuda.o $(BUILD)/rawtodigi_cupla.cuda.o
+	$(NVCC) $(NVCC_FLAGS) -o $@ -dlink $(BUILD)/analyzer_cupla.cuda.o $(BUILD)/rawtodigi_cupla.cuda.o
+
+$(BUILD)/main_cupla.cuda.o: main_cupla.cc analyzer_cupla.h | $(BUILD)
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -c $<
+
+test-cupla-cuda-async: $(BUILD)/main_cupla.cuda.o $(BUILD)/analyzer_cupla.cuda.o $(BUILD)/rawtodigi_cupla.cuda.o $(BUILD)/cupla.dlink.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ $(CUDA_LD_FLAGS)
+
+$(DEBUG)/analyzer_cupla.cuda.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(DEBUG)
+	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -dc $<
+
+$(DEBUG)/rawtodigi_cupla.cuda.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(DEBUG)
+	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -dc $<
+
+$(DEBUG)/cupla.dlink.o: $(DEBUG)/analyzer_cupla.cuda.o $(DEBUG)/rawtodigi_cupla.cuda.o
+	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -o $@ -dlink $(DEBUG)/analyzer_cupla.cuda.o $(DEBUG)/rawtodigi_cupla.cuda.o
+
+$(DEBUG)/main_cupla.cuda.o: main_cupla.cc analyzer_cupla.h | $(DEBUG)
+	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_CUPLA -include "cupla/config/GpuCudaRt.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_GPU_CUDA_BACKEND $(CUPLA_FLAGS) -o $@ -x cu -c $<
+
+debug-cupla-cuda-async: $(DEBUG)/main_cupla.cuda.o $(DEBUG)/analyzer_cupla.cuda.o $(DEBUG)/rawtodigi_cupla.cuda.o $(DEBUG)/cupla.dlink.o
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $^ $(CUDA_LD_FLAGS)
 
 else
 test-cupla-cuda-async:
@@ -281,33 +305,105 @@ debug-cupla-cuda-async:
 
 endif
 
-# Alpaka/cupla implementation, with the serial CPU async backend
-test-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
+# Alpaka/Cupla implementation, with the serial CPU async backend
+$(BUILD)/analyzer_cupla.seq-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-debug-cupla-seq-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+$(BUILD)/rawtodigi_cupla.seq-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-# Alpaka/cupla implementation, with the serial CPU sync backend
-test-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc
+$(BUILD)/main_cupla.seq-seq-async.o: main_cupla.cc analyzer_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-debug-cupla-seq-seq-sync: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 $(CUPLA_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+test-cupla-seq-seq-async: $(BUILD)/main_cupla.seq-seq-async.o $(BUILD)/analyzer_cupla.seq-seq-async.o $(BUILD)/rawtodigi_cupla.seq-seq-async.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ -pthread
 
-# Alpaka/cupla implementation, with the TBB blocks backend
-test-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
+$(DEBUG)/analyzer_cupla.seq-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-debug-cupla-tbb-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc $(TBB_LD_FLAGS)
+$(DEBUG)/rawtodigi_cupla.seq-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-# Alpaka/cupla implementation, with the OpenMP 2 blocks backend
-test-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp -o $@ main_cupla.cc rawtodigi_cupla.cc
+$(DEBUG)/main_cupla.seq-seq-async.o: main_cupla.cc analyzer_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
 
-debug-cupla-omp2-seq-async: main_cupla.cc rawtodigi_cupla.cc rawtodigi_cupla.h
-	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 $(CUPLA_FLAGS) -pthread -fopenmp $(CXX_DEBUG) -o $@ main_cupla.cc rawtodigi_cupla.cc
+debug-cupla-seq-seq-async: $(DEBUG)/main_cupla.seq-seq-async.o $(DEBUG)/analyzer_cupla.seq-seq-async.o $(DEBUG)/rawtodigi_cupla.seq-seq-async.o
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $^ -pthread
+
+# Alpaka/Cupla implementation, with the serial CPU sync backend
+$(BUILD)/analyzer_cupla.seq-seq-sync.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+$(BUILD)/rawtodigi_cupla.seq-seq-sync.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+$(BUILD)/main_cupla.seq-seq-sync.o: main_cupla.cc analyzer_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+test-cupla-seq-seq-sync: $(BUILD)/main_cupla.seq-seq-sync.o $(BUILD)/analyzer_cupla.seq-seq-sync.o $(BUILD)/rawtodigi_cupla.seq-seq-sync.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ -pthread
+
+$(DEBUG)/analyzer_cupla.seq-seq-sync.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+$(DEBUG)/rawtodigi_cupla.seq-seq-sync.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+$(DEBUG)/main_cupla.seq-seq-sync.o: main_cupla.cc analyzer_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuSerial.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=0 -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -o $@ -c $<
+
+debug-cupla-seq-seq-sync: $(DEBUG)/main_cupla.seq-seq-sync.o $(DEBUG)/analyzer_cupla.seq-seq-sync.o $(DEBUG)/rawtodigi_cupla.seq-seq-sync.o
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $^ -pthread
+
+# Alpaka/Cupla implementation, with the TBB blocks backend
+$(BUILD)/analyzer_cupla.tbb-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+$(BUILD)/rawtodigi_cupla.tbb-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+$(BUILD)/main_cupla.tbb-seq-async.o: main_cupla.cc analyzer_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+test-cupla-tbb-seq-async: $(BUILD)/main_cupla.tbb-seq-async.o $(BUILD)/analyzer_cupla.tbb-seq-async.o $(BUILD)/rawtodigi_cupla.tbb-seq-async.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ -pthread $(TBB_LD_FLAGS)
+
+$(DEBUG)/analyzer_cupla.tbb-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+$(DEBUG)/rawtodigi_cupla.tbb-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+$(DEBUG)/main_cupla.tbb-seq-async.o: main_cupla.cc analyzer_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuTbbBlocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_TBB_T_SEQ_BACKEND $(CUPLA_FLAGS) $(TBB_CXX_FLAGS) -pthread -o $@ -c $<
+
+debug-cupla-tbb-seq-async: $(DEBUG)/main_cupla.tbb-seq-async.o $(DEBUG)/analyzer_cupla.tbb-seq-async.o $(DEBUG)/rawtodigi_cupla.tbb-seq-async.o
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $^ -pthread $(TBB_LD_FLAGS)
+
+# Alpaka/Cupla implementation, with the OpenMP 2 blocks backend
+$(BUILD)/analyzer_cupla.omp2-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+$(BUILD)/rawtodigi_cupla.omp2-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+$(BUILD)/main_cupla.omp2-seq-async.o: main_cupla.cc analyzer_cupla.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+test-cupla-omp2-seq-async: $(BUILD)/main_cupla.omp2-seq-async.o $(BUILD)/analyzer_cupla.omp2-seq-async.o $(BUILD)/rawtodigi_cupla.omp2-seq-async.o
+	$(CXX) $(CXX_FLAGS) -o $@ $^ -pthread -fopenmp
+
+$(DEBUG)/analyzer_cupla.omp2-seq-async.o: analyzer_cupla.cc analyzer_cupla.h rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+$(DEBUG)/rawtodigi_cupla.omp2-seq-async.o: rawtodigi_cupla.cc rawtodigi_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+$(DEBUG)/main_cupla.omp2-seq-async.o: main_cupla.cc analyzer_cupla.h | $(DEBUG)
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_CUPLA -include "cupla/config/CpuOmp2Blocks.hpp" -DCUPLA_STREAM_ASYNC_ENABLED=1 -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_BACKEND $(CUPLA_FLAGS) -pthread -fopenmp -o $@ -c $<
+
+debug-cupla-omp2-seq-async: $(DEBUG)/main_cupla.omp2-seq-async.o $(DEBUG)/analyzer_cupla.omp2-seq-async.o $(DEBUG)/rawtodigi_cupla.omp2-seq-async.o
+	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $^ -pthread -fopenmp
 
 else
 cupla:
