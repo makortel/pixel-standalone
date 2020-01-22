@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 #ifdef DIGI_ONEAPI_WORKAROUND
   output = std::make_unique<Output>();
 #endif  // DIGI_ONEAPI_WORKAROUND
-  for (int i = 0; i < NLOOPS; ++i) {
+  for (int i = 0; i <= NLOOPS; ++i) {
 #ifndef DIGI_ONEAPI_WORKAROUND
     output = std::make_unique<Output>();
 #endif  // ! DIGI_ONEAPI_WORKAROUND
@@ -127,7 +127,9 @@ int main(int argc, char **argv) {
 
     auto diff = stop - start;
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-    totaltime += time;
+    if (i != 0) {
+      totaltime += time;
+    }
   }
 
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
