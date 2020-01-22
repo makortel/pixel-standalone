@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     queue.memcpy((void *)input_d, (void *)input_h, sizeof(Input));
     queue.memcpy((void *)output_d, (void *)output_h, sizeof(Output));
 
-    oneapi::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, queue);
+    oneapi::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, i == 0, queue);
 
     queue.memcpy((void *)output_h, (void *)output_d, sizeof(Output));
     queue.wait_and_throw();

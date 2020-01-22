@@ -478,6 +478,7 @@ namespace oneapi {
                  bool useQualityInfo,
                  bool includeErrors,
                  bool debug,
+                 bool first,
                  cl::sycl::queue queue) try {
     const uint32_t blockSize = std::min({queue.get_device().get_info<cl::sycl::info::device::max_work_group_size>(),
                                          queue.get_device().get_info<cl::sycl::info::device::max_work_item_sizes>()[0],
@@ -485,6 +486,9 @@ namespace oneapi {
     const uint32_t blocks = std::min((wordCounter + blockSize - 1) / blockSize,
                                      queue.get_device().get_info<cl::sycl::info::device::max_compute_units>());
     const uint32_t threads = blocks * blockSize;
+    if (first) {
+      std::cout << "work groups: " << blocks << ", work items per group: " << blockSize << std::endl;
+    }
     queue.submit([&](cl::sycl::handler& cgh) {
       cl::sycl::stream out(64 * 1024, 80, cgh);
       cgh.parallel_for<rawtodigi_kernel_name>(
