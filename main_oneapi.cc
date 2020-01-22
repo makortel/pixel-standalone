@@ -4,7 +4,6 @@
 #include <memory>
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 
 #include "input.h"
 #include "modules.h"
