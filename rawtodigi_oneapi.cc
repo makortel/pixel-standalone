@@ -479,14 +479,16 @@ namespace oneapi {
                  bool includeErrors,
                  bool debug,
                  cl::sycl::queue queue) try {
-    const uint32_t blockSize = 512;
-    const uint32_t blocks = (wordCounter + blockSize - 1) / blockSize;
+    const uint32_t blockSize = std::min({queue.get_device().get_info<cl::sycl::info::device::max_work_group_size>(),
+                                         queue.get_device().get_info<cl::sycl::info::device::max_work_item_sizes>()[0],
+                                         4096ul});  // upper limit from trial and error
+    const uint32_t blocks = std::min((wordCounter + blockSize - 1) / blockSize,
+                                     queue.get_device().get_info<cl::sycl::info::device::max_compute_units>());
     const uint32_t threads = blocks * blockSize;
     queue.submit([&](cl::sycl::handler& cgh) {
       cl::sycl::stream out(64 * 1024, 80, cgh);
       cgh.parallel_for<rawtodigi_kernel_name>(
-          cl::sycl::nd_range<1>{cl::sycl::range<1>{threads}, cl::sycl::range<1>{blockSize}},
-          [=](cl::sycl::nd_item<1> item) {
+          cl::sycl::nd_range<1>{{threads}, {blockSize}}, [=](cl::sycl::nd_item<1> item) {
             rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, debug, item, out);
           });
     });
