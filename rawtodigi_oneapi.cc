@@ -157,7 +157,6 @@ namespace oneapi {
   }
 
   uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug, cl::sycl::stream out) {
-#ifndef DIGI_ONEAPI_WORKAROUND
     if (debug) {
       switch (status) {
         case (1): {
@@ -180,7 +179,6 @@ namespace oneapi {
           out << "Cabling check returned unexpected result, status = " << status << cl::sycl::endl;
       };
     }
-#endif  // DIGI_ONEAPI_WORKAROUND
 
     if (status >= 1 and status <= 4) {
       return status + 34;

@@ -464,10 +464,10 @@ oneapi-debug: debug-oneapi
 
 # oneAPI implementation
 test-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) -O2 -std=c++14 -DDIGI_ONEAPI -DDIGI_ONEAPI_WORKAROUND -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) -g -O2 -std=c++14 -DDIGI_ONEAPI -DDIGI_ONEAPI_WORKAROUND -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 else
 oneapi:
