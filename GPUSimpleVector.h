@@ -9,14 +9,18 @@
 #if defined DIGI_CUDA
 #include <cuda.h>
 #elif defined DIGI_ALPAKA
+#if defined ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || defined ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <alpaka/alpaka.hpp>
+#endif  // ALPAKA_ACC_*_ENABLED
 #elif defined DIGI_CUPLA
 /* Do NOT include other headers that use CUDA runtime functions or variables
  * before this include, because cupla renames CUDA host functions and device
  * built-in variables using macros and macro functions.
  * Do NOT include other specific includes such as `<cuda.h>`, etc.
  */
+#if defined ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || defined ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <cuda_to_cupla.hpp>
+#endif  // ALPAKA_ACC_*_ENABLED
 #elif defined DIGI_KOKKOS
 #include <Kokkos_Core.hpp>
 #elif defined DIGI_ONEAPI
@@ -95,6 +99,7 @@ namespace GPU {
     }
 
 #elif defined DIGI_ALPAKA
+#if defined ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || defined ALPAKA_ACC_GPU_CUDA_ENABLED
 
     template <typename T_Acc>
     ALPAKA_FN_ACC int push_back(T_Acc const &acc, const T &element) {
@@ -120,7 +125,9 @@ namespace GPU {
       }
     }
 
+#endif  // ALPAKA_ACC_*_ENABLED
 #elif defined DIGI_CUPLA
+#if defined ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || defined ALPAKA_ACC_GPU_CUDA_ENABLED
 
     template <typename T_Acc>
     ALPAKA_FN_ACC int push_back(T_Acc const &acc, const T &element) {
@@ -146,6 +153,7 @@ namespace GPU {
       }
     }
 
+#endif  // ALPAKA_ACC_*_ENABLED
 #elif defined DIGI_KOKKOS
 
     KOKKOS_INLINE_FUNCTION
