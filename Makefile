@@ -64,7 +64,8 @@ CUPLA_DEBUG     := $(ALPAKA_DEBUG)
 CUPLA_LD_FLAGS  := -L$(CUPLA_BASE)/lib -lcupla
 
 # oneAPI flags
-ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
+#ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
+ONEAPI_CXX := /data/user/fwyzard/sycl/build/bin/clang++ -fsycl -I/opt/intel/inteloneapi/dpcpp-ct/latest/include
 
 # Kokkos flags
 # recommended to include only after the first target, see
