@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   }
 
   cl::sycl::queue queue{device, exception_handler};
-  cl::sycl::context ctx = (device_type == cpu_device) ? cl::sycl::context{device} : queue.get_context();
+  cl::sycl::context ctx = queue.get_context();
   std::cout << "Running on SYCL device " << device.get_info<cl::sycl::info::device::name>() << ", driver version "
             << device.get_info<cl::sycl::info::device::driver_version>() << std::endl;
 
