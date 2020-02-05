@@ -66,6 +66,7 @@ CUPLA_LD_FLAGS  := -L$(CUPLA_BASE)/lib -lcupla
 # oneAPI flags
 #ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
 ONEAPI_CXX := /data/user/fwyzard/sycl/build/bin/clang++ -fsycl -I/opt/intel/inteloneapi/dpcpp-ct/latest/include
+ONEAPI_CUDA_FLAGS := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
 
 # Kokkos flags
 # recommended to include only after the first target, see
@@ -457,10 +458,10 @@ kokkos-debug:
 endif
 
 ifdef ONEAPI_CXX
-oneapi: test-oneapi
+oneapi: test-oneapi test-oneapi-cuda
 	@echo -e $(GREEN)oneAPI targets built$(RESET)
 
-oneapi-debug: debug-oneapi
+oneapi-debug: debug-oneapi debug-oneapi-cuda
 	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
 
 # oneAPI implementation
@@ -470,10 +471,27 @@ test-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
 debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
 	$(ONEAPI_CXX) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
+ifdef CUDA_BASE
+test-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_CUDA_FLAGS) -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+
+debug-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_CUDA_FLAGS) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+
+else
+test-oneapi-cuda:
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), oneAPI targets using CUDA will not be built
+
+debug-oneapi-cuda:
+	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), oneAPI debug targets using CUDA will not be built
+
+endif
+
 else
 oneapi:
 	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI targets will not be built
 
 oneapi-debug:
 	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
+
 endif

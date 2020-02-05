@@ -14,7 +14,7 @@ namespace {
   constexpr int NLOOPS = 100;
 }
 
-enum DeviceType { default_device = 0, host_device, cpu_device, gpu_device };
+enum DeviceType { default_device = 0, host_device, cpu_device, gpu_device, cuda_device };
 
 void exception_handler(cl::sycl::exception_list exceptions) {
   for (auto const &exc_ptr : exceptions) {
@@ -26,6 +26,19 @@ void exception_handler(cl::sycl::exception_list exceptions) {
   }
 }
 
+class cuda_selector : public cl::sycl::device_selector {
+public:
+  int operator()(const cl::sycl::device & device) const override {
+    using namespace cl::sycl::info;
+    std::string const& name = device.get_info<cl::sycl::info::device::name>();
+    std::string const& vendor = device.get_info<cl::sycl::info::device::vendor>();
+    if (device.is_gpu() and (name.find("NVIDIA") != std::string::npos or vendor.find("NVIDIA") != std::string::npos)) {
+      return 1;
+    };
+    return -1;
+  }
+};
+
 int main(int argc, char **argv) {
   DeviceType device_type = default_device;
   if (argc > 1) {
@@ -35,6 +48,8 @@ int main(int argc, char **argv) {
       device_type = cpu_device;
     else if (std::strcmp(argv[1], "--gpu") == 0)
       device_type = gpu_device;
+    else if (std::strcmp(argv[1], "--cuda") == 0)
+      device_type = cuda_device;
     else
       std::cout << "Ignoring unknown option " << argv[1] << std::endl;
   }
@@ -42,24 +57,29 @@ int main(int argc, char **argv) {
   cl::sycl::device device;
   switch (device_type) {
     case host_device: {
-      cl::sycl::host_selector device_selector;
-      device = cl::sycl::device{device_selector};
+      cl::sycl::host_selector selector;
+      device = cl::sycl::device{selector};
       break;
     }
     case cpu_device: {
-      cl::sycl::cpu_selector device_selector;
-      device = cl::sycl::device{device_selector};
+      cl::sycl::cpu_selector selector;
+      device = cl::sycl::device{selector};
       break;
     }
     case gpu_device: {
-      cl::sycl::gpu_selector device_selector;
-      device = cl::sycl::device{device_selector};
+      cl::sycl::gpu_selector selector;
+      device = cl::sycl::device{selector};
+      break;
+    }
+    case cuda_device: {
+      cuda_selector selector;
+      device = cl::sycl::device{selector};
       break;
     }
     case default_device:
     default: {
-      cl::sycl::default_selector device_selector;
-      device = cl::sycl::device{device_selector};
+      cl::sycl::default_selector selector;
+      device = cl::sycl::device{selector};
     }
   }
 
