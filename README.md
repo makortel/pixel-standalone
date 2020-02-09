@@ -45,10 +45,11 @@ tested with the CUDA, serial, and TBB backends.
 The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.x
 and gcc 8.x.
 
-The backend is chosen at compile time setting one of the `ALPAKA_ACC_*` preprocessor
+The backend is chosen at compile time setting one of the `ALPAKA_ACC` preprocessor
 symbols. The `main-alpaka` binary tries to exercise all available backends.
 
-See [here](AlpakaAndCupla.md) for instructions on installing Alpaka.
+See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
+on the Patatrack Wiki for installing Alpaka and Cupla.
 
 ### Cupla [dev](https://github.com/ComputationalRadiationPhysics/cupla/tree/dev) branch
 
@@ -57,8 +58,8 @@ tested with the CUDA, serial, TBB and OpenMP backends.
 The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.x
 and gcc 8.x.
 
-Rather than using the advertised `CMake`-based approach, one can build Cupla as
-a header-only library, as described [here](AlpakaAndCupla.md).
+See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
+on the Patatrack Wiki for installing Alpaka and Cupla.
 
 ### Kokkos
 
