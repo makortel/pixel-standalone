@@ -24,6 +24,8 @@ TBB_BASE    :=
 CUDA_BASE   := /usr/local/cuda
 ALPAKA_BASE := /usr/local/alpaka/alpaka
 CUPLA_BASE  := /usr/local/alpaka/cupla
+ONEAPI_BASE := /opt/intel/inteloneapi/compiler/latest/linux
+DPCT_BASE   := /opt/intel/inteloneapi/dpcpp-ct/latest
 
 # host compiler
 CXX := g++
@@ -64,9 +66,12 @@ CUPLA_DEBUG     := $(ALPAKA_DEBUG)
 CUPLA_LD_FLAGS  := -L$(CUPLA_BASE)/lib -lcupla
 
 # oneAPI flags
-#ONEAPI_CXX := $(shell which dpcpp 2> /dev/null)
-ONEAPI_CXX := /data/user/fwyzard/sycl/build/bin/clang++ -fsycl -I/opt/intel/inteloneapi/dpcpp-ct/latest/include
-ONEAPI_CUDA_FLAGS := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
+ONEAPI_CXX   := $(ONEAPI_BASE)/bin/clang++
+ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+ifdef CUDA_BASE
+ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_BASE)/lib/libpi_cuda.so)
+ONEAPI_CUDA_FLAGS  := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
+endif
 
 # Kokkos flags
 # recommended to include only after the first target, see
@@ -457,7 +462,7 @@ kokkos-debug:
 
 endif
 
-ifdef ONEAPI_CXX
+ifdef ONEAPI_BASE
 oneapi: test-oneapi test-oneapi-cuda
 	@echo -e $(GREEN)oneAPI targets built$(RESET)
 
@@ -466,24 +471,24 @@ oneapi-debug: debug-oneapi debug-oneapi-cuda
 
 # oneAPI implementation
 test-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
-ifdef CUDA_BASE
+ifdef ONEAPI_CUDA_PLUGIN
 test-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_CUDA_FLAGS) -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 debug-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_CUDA_FLAGS) -g -O2 -std=c++14 -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
 
 else
 test-oneapi-cuda:
-	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), oneAPI targets using CUDA will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA support not found$(RESET), oneAPI targets using CUDA will not be built
 
 debug-oneapi-cuda:
-	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), oneAPI debug targets using CUDA will not be built
+	@echo -e $(YELLOW)NVIDIA CUDA support not found$(RESET), oneAPI debug targets using CUDA will not be built
 
 endif
 
