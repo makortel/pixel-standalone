@@ -14,7 +14,6 @@ namespace oneapi {
                  bool useQualityInfo,
                  bool includeErrors,
                  bool debug,
-                 bool first,
                  cl::sycl::queue queue);
 
 }  // namespace oneapi

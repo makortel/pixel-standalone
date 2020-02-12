@@ -6,6 +6,7 @@
 
 #include "GPUSimpleVector.h"
 #include "input.h"
+#include "modules.h"
 #include "output.h"
 #include "rawtodigi_oneapi.h"
 
@@ -355,12 +356,12 @@ namespace oneapi {
     return errorFound ? errorType : 0;
   }
 
-  void rawtodigi_kernel(const Input* input,
+  void rawtodigi_kernel(cl::sycl::nd_item<1> item,
+                        const Input* input,
                         Output* output,
                         bool useQualityInfo,
                         bool includeErrors,
-                        bool debug,
-                        cl::sycl::nd_item<1> item) {
+                        bool debug) {
     const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
     const uint32_t wordCounter = input->wordCounter;
     const uint32_t* word = input->word;
@@ -477,7 +478,13 @@ namespace oneapi {
 
   }  // end of Raw to Digi kernel
 
-  class rawtodigi_kernel_name;
+  class rawtodigi_kernel_;
+
+  void count_modules_kernel(const Input* input, const Output* output) {
+    printf("Output: %d modules on device\n", countModules(output->moduleInd, input->wordCounter));
+  }
+
+  class count_modules_kernel_;
 
   void rawtodigi(const Input* input_d,
                  Output* output_d,
@@ -485,7 +492,6 @@ namespace oneapi {
                  bool useQualityInfo,
                  bool includeErrors,
                  bool debug,
-                 bool first,
                  cl::sycl::queue queue) try {
     const uint32_t blockSize = std::min({queue.get_device().get_info<cl::sycl::info::device::max_work_group_size>(),
                                          queue.get_device().get_info<cl::sycl::info::device::max_work_item_sizes>()[0],
@@ -493,15 +499,19 @@ namespace oneapi {
     const uint32_t blocks = std::min((wordCounter + blockSize - 1) / blockSize,
                                      queue.get_device().get_info<cl::sycl::info::device::max_compute_units>());
     const uint32_t threads = blocks * blockSize;
-    if (first) {
+    if (debug) {
       std::cout << "work groups: " << blocks << ", work items per group: " << blockSize << std::endl;
     }
     queue.submit([&](cl::sycl::handler& cgh) {
-      cgh.parallel_for<rawtodigi_kernel_name>(
+      cgh.parallel_for<rawtodigi_kernel_>(
           cl::sycl::nd_range<1>{{threads}, {blockSize}}, [=](cl::sycl::nd_item<1> item) {
-            rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, first, item);
+            rawtodigi_kernel(item, input_d, output_d, useQualityInfo, includeErrors, debug);
           });
     });
+    if (debug)
+      queue.submit([&](cl::sycl::handler& cgh) {
+        cgh.single_task<count_modules_kernel_>([=]() { count_modules_kernel(input_d, output_d); });
+      });
   } catch (cl::sycl::exception const& exc) {
     std::cerr << exc.what() << "EOE at line " << __LINE__ << std::endl;
     std::exit(1);
