@@ -470,18 +470,18 @@ oneapi-debug: debug-oneapi debug-oneapi-cuda
 	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
 
 # oneAPI implementation
-test-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+test-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
-debug-oneapi: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+debug-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
 ifdef ONEAPI_CUDA_PLUGIN
-test-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+test-oneapi-cuda: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
-debug-oneapi-cuda: main_oneapi.cc rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc rawtodigi_oneapi.cc
+debug-oneapi-cuda: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
 else
 test-oneapi-cuda:
