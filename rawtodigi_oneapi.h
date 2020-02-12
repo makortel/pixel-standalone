@@ -3,15 +3,13 @@
 
 #include <CL/sycl.hpp>
 
-#include "GPUSimpleVector.h"
-#include "input.h"
-#include "output.h"
-#include "pixelgpudetails.h"
+class Input;
+class Output;
 
 namespace oneapi {
 
-  void rawtodigi(const Input *input_d,
-                 Output *output_d,
+  void rawtodigi(const Input* input,
+                 Output* output,
                  const uint32_t wordCounter,
                  bool useQualityInfo,
                  bool includeErrors,

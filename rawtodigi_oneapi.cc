@@ -1,18 +1,32 @@
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include <CL/sycl.hpp>
 
+#include "GPUSimpleVector.h"
+#include "input.h"
+#include "output.h"
 #include "rawtodigi_oneapi.h"
 
+// experimental printf support
+
+#ifdef __SYCL_DEVICE_ONLY__
+// according to OpenCL C spec, the printf format string must be in constant address space
+#define printf(FORMAT, ...)                                               \
+  do {                                                                    \
+    static const __attribute__((opencl_constant)) char format[] = FORMAT; \
+    cl::sycl::intel::experimental::printf(format, ##__VA_ARGS__);         \
+  } while (false)
+#endif
+
 namespace oneapi {
+
   class Packing {
   public:
     using PackedDigiType = uint32_t;
 
     // Constructor: pre-computes masks and shifts from field widths
-
     inline constexpr Packing(unsigned int row_w, unsigned int column_w, unsigned int time_w, unsigned int adc_w)
         : row_width(row_w),
           column_width(column_w),
@@ -156,27 +170,28 @@ namespace oneapi {
     return global;
   }
 
-  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug, cl::sycl::stream out) {
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     if (debug) {
       switch (status) {
         case (1): {
-          out << "Error in Fed: " << fedId << ", invalid channel Id (errorType = 35)" << cl::sycl::endl;
+          printf("Error in Fed: %i, invalid channel Id (errorType = 35\n)", fedId);
           break;
         }
         case (2): {
-          out << "Error in Fed: " << fedId << ", invalid ROC Id (errorType = 36)" << cl::sycl::endl;
+          printf("Error in Fed: %i, invalid ROC Id (errorType = 36)\n", fedId);
           break;
         }
         case (3): {
-          out << "Error in Fed: " << fedId << ", invalid dcol/pixel value (errorType = 37)" << cl::sycl::endl;
+          printf("Error in Fed: %i, invalid dcol/pixel value (errorType = 37)\n", fedId);
           break;
         }
         case (4): {
-          out << "Error in Fed: " << fedId << ", dcol/pixel read out of order (errorType = 38)" << cl::sycl::endl;
+          printf("Error in Fed: %i, dcol/pixel read out of order (errorType = 38)\n", fedId);
           break;
         }
         default:
-          out << "Cabling check returned unexpected result, status = " << status << cl::sycl::endl;
+          if (debug)
+            printf("Cabling check returned unexpected result, status = %i\n", status);
       };
     }
 
@@ -190,8 +205,7 @@ namespace oneapi {
                        uint32_t errWord,
                        uint32_t errorType,
                        const SiPixelFedCablingMapGPU* cablingMap,
-                       bool debug,
-                       cl::sycl::stream out) {
+                       bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -264,12 +278,8 @@ namespace oneapi {
     return rID;
   }
 
-  uint8_t checkROC(uint32_t errorWord,
-                   uint8_t fedId,
-                   uint32_t link,
-                   const SiPixelFedCablingMapGPU* cablingMap,
-                   bool debug,
-                   cl::sycl::stream out) {
+  uint8_t checkROC(
+      uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU* cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
       return 0;
@@ -285,47 +295,47 @@ namespace oneapi {
             errorFound = false;
         }
         if (debug and errorFound)
-          out << "Invalid ROC = 25 found (errorType = 25)" << cl::sycl::endl;
+          printf("Invalid ROC = 25 found (errorType = 25)\n");
         break;
       }
       case (26): {
         if (debug)
-          out << "Gap word found (errorType = 26)" << cl::sycl::endl;
+          printf("Gap word found (errorType = 26)\n");
         errorFound = true;
         break;
       }
       case (27): {
         if (debug)
-          out << "Dummy word found (errorType = 27)" << cl::sycl::endl;
+          printf("Dummy word found (errorType = 27)\n");
         errorFound = true;
         break;
       }
       case (28): {
         if (debug)
-          out << "Error fifo nearly full (errorType = 28)" << cl::sycl::endl;
+          printf("Error fifo nearly full (errorType = 28)\n");
         errorFound = true;
         break;
       }
       case (29): {
         if (debug)
-          out << "Timeout on a channel (errorType = 29)" << cl::sycl::endl;
+          printf("Timeout on a channel (errorType = 29)\n");
         if ((errorWord >> pixelgpudetails::OMIT_ERR_shift) & pixelgpudetails::OMIT_ERR_mask) {
           if (debug)
-            out << "...first errorType=29 error, this gets masked out" << cl::sycl::endl;
+            printf("...first errorType=29 error, this gets masked out\n");
         }
         errorFound = true;
         break;
       }
       case (30): {
         if (debug)
-          out << "TBM error trailer (errorType = 30)" << cl::sycl::endl;
+          printf("TBM error trailer (errorType = 30)\n");
         int StateMatch_bits = 4;
         int StateMatch_shift = 8;
         uint32_t StateMatch_mask = ~(~uint32_t(0) << StateMatch_bits);
         int StateMatch = (errorWord >> StateMatch_shift) & StateMatch_mask;
         if (StateMatch != 1 && StateMatch != 8) {
           if (debug)
-            out << "FED error 30 with unexpected State Bits (errorType = 30)" << cl::sycl::endl;
+            printf("FED error 30 with unexpected State Bits (errorType = 30)\n");
         }
         if (StateMatch == 1)
           errorType = 40;  // 1=Overflow -> 40, 8=number of ROCs -> 30
@@ -334,7 +344,7 @@ namespace oneapi {
       }
       case (31): {
         if (debug)
-          out << "Event number error (errorType = 31)" << cl::sycl::endl;
+          printf("Event number error (errorType = 31)\n");
         errorFound = true;
         break;
       }
@@ -350,8 +360,7 @@ namespace oneapi {
                         bool useQualityInfo,
                         bool includeErrors,
                         bool debug,
-                        cl::sycl::nd_item<1> item,
-                        cl::sycl::stream out) {
+                        cl::sycl::nd_item<1> item) {
     const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
     const uint32_t wordCounter = input->wordCounter;
     const uint32_t* word = input->word;
@@ -388,10 +397,10 @@ namespace oneapi {
       uint32_t roc = getRoc(ww);    // Extract Roc in link
       pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
 
-      uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug, out);
+      uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
       skipROC = (roc < pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
       if (includeErrors and skipROC) {
-        uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug, out);
+        uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
         err->push_back(PixelErrorCompact{rID, ww, errorType, fedId});
         continue;
       }
@@ -433,10 +442,10 @@ namespace oneapi {
         localPix.col = col;
         if (includeErrors) {
           if (not rocRowColIsValid(row, col)) {
-            uint8_t error = conversionError(fedId, 3, debug, out);  // use the device function and fill the arrays
+            uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
             err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
-              out << "TODO - output needs update" << cl::sycl::endl;
+              printf("TODO - output needs update\n");
             continue;
           }
         }
@@ -449,10 +458,10 @@ namespace oneapi {
         localPix.row = row;
         localPix.col = col;
         if (includeErrors and not dcolIsValid(dcol, pxid)) {
-          uint8_t error = conversionError(fedId, 3, debug, out);
+          uint8_t error = conversionError(fedId, 3, debug);
           err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
-            out << "TODO - output needs update" << cl::sycl::endl;
+            printf("TODO - output needs update\n");
           continue;
         }
       }
@@ -488,10 +497,9 @@ namespace oneapi {
       std::cout << "work groups: " << blocks << ", work items per group: " << blockSize << std::endl;
     }
     queue.submit([&](cl::sycl::handler& cgh) {
-      cl::sycl::stream out(64 * 1024, 80, cgh);
       cgh.parallel_for<rawtodigi_kernel_name>(
           cl::sycl::nd_range<1>{{threads}, {blockSize}}, [=](cl::sycl::nd_item<1> item) {
-            rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, debug, item, out);
+            rawtodigi_kernel(input_d, output_d, useQualityInfo, includeErrors, first, item);
           });
     });
   } catch (cl::sycl::exception const& exc) {
