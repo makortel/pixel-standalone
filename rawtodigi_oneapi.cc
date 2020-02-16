@@ -492,7 +492,13 @@ namespace oneapi {
                  bool useQualityInfo,
                  bool includeErrors,
                  bool debug,
+#if __SYCL_COMPILER_VERSION <= 20200118
+                 // Intel oneAPI beta 4
+                 cl::sycl::ordered_queue queue) try {
+#else
+                 // Intel SYCL branch
                  cl::sycl::queue queue) try {
+#endif
     const uint32_t blockSize = std::min({queue.get_device().get_info<cl::sycl::info::device::max_work_group_size>(),
                                          queue.get_device().get_info<cl::sycl::info::device::max_work_item_sizes>()[0],
                                          4096ul});  // upper limit from trial and error

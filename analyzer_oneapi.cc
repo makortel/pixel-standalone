@@ -27,31 +27,53 @@ namespace oneapi {
   }
 
   void analyze(cl::sycl::device device, Input const &input, Output &output, double &totaltime) {
-    cl::sycl::queue queue{device, exception_handler};
+#if __SYCL_COMPILER_VERSION <= 20200118
+    // Intel oneAPI beta 4
+    cl::sycl::ordered_queue queue{device, exception_handler};
+#else
+    // Intel SYCL branch
+    cl::sycl::queue queue{device, exception_handler, cl::sycl::property::queue::in_order()};
+#endif
 
     totaltime = 0;
 
     for (int i = 0; i <= NLOOPS; ++i) {
       output = Output{};
 
+#if __SYCL_COMPILER_VERSION <= 20200118
+      auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), device, queue.get_context());
+#else
       auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), queue);
+#endif
       if (input_d == nullptr) {
         std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of device memory" << std::endl;
         exit(1);
       }
+#if __SYCL_COMPILER_VERSION <= 20200118
+      auto input_h = (Input *)cl::sycl::malloc_host(sizeof(Input), queue.get_context());
+#else
       auto input_h = (Input *)cl::sycl::malloc_host(sizeof(Input), queue);
+#endif
       if (input_h == nullptr) {
         std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of host memory" << std::endl;
         exit(1);
       }
       std::memcpy(input_h, &input, sizeof(Input));
 
+#if __SYCL_COMPILER_VERSION <= 20200118
+      auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), device, queue.get_context());
+#else
       auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), queue);
+#endif
       if (output_d == nullptr) {
         std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of device memory" << std::endl;
         exit(1);
       }
+#if __SYCL_COMPILER_VERSION <= 20200118
+      auto output_h = (Output *)cl::sycl::malloc_host(sizeof(Output), queue.get_context());
+#else
       auto output_h = (Output *)cl::sycl::malloc_host(sizeof(Output), queue);
+#endif
       if (output_h == nullptr) {
         std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of host memory" << std::endl;
         exit(1);
@@ -72,10 +94,17 @@ namespace oneapi {
       std::memcpy(&output, output_h, sizeof(Output));
       output.err.set_data(output.err_d);
 
+#if __SYCL_COMPILER_VERSION <= 20200118
+      cl::sycl::free(output_d, queue.get_context());
+      cl::sycl::free(input_d, queue.get_context());
+      cl::sycl::free(output_h, queue.get_context());
+      cl::sycl::free(input_h, queue.get_context());
+#else
       cl::sycl::free(output_d, queue);
       cl::sycl::free(input_d, queue);
       cl::sycl::free(output_h, queue);
       cl::sycl::free(input_h, queue);
+#endif
 
       auto diff = stop - start;
       auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
