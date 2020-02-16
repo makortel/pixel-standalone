@@ -28,7 +28,7 @@ namespace CUPLA_ACCELERATOR_NAMESPACE {
 
     totaltime = 0;
 
-    for (int i = 0; i < NLOOPS; ++i) {
+    for (int i = 0; i <= NLOOPS; ++i) {
       output = Output();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -57,7 +57,7 @@ namespace CUPLA_ACCELERATOR_NAMESPACE {
       const int blocks = (input.wordCounter + threadsPerBlock - 1) / threadsPerBlock;
 
       CUPLA_KERNEL_OPTI(CUPLA_ACCELERATOR_NAMESPACE::rawtodigi_kernel)
-      (blocks, threadsPerBlock, 0, stream)(input_d, output_d, true, true, false);
+      (blocks, threadsPerBlock, 0, stream)(input_d, output_d, true, true, i == 0);
       CUPLA_CHECK(cudaGetLastError());
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -78,7 +78,10 @@ namespace CUPLA_ACCELERATOR_NAMESPACE {
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
       auto diff = stop - start;
-      totaltime += std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      if (i != 0) {
+        totaltime += time;
+      }
     }
 
     totaltime /= NLOOPS;

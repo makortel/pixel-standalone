@@ -11,7 +11,7 @@ namespace {
 
 namespace naive {
   void analyze(Input const& input, std::unique_ptr<Output>& output, double& totaltime) {
-    for (int i = 0; i < NLOOPS; ++i) {
+    for (int i = 0; i <= NLOOPS; ++i) {
       output = std::make_unique<Output>();
 
       auto start = std::chrono::high_resolution_clock::now();
@@ -28,12 +28,14 @@ namespace naive {
                        &output->err,
                        true,
                        true,
-                       false);
+                       i == 0);
       auto stop = std::chrono::high_resolution_clock::now();
 
       auto diff = stop - start;
       auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-      totaltime += time;
+      if (i != 0) {
+        totaltime += time;
+      }
     }
 
     totaltime /= NLOOPS;

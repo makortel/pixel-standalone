@@ -24,7 +24,7 @@ namespace cuda {
 
     totaltime = 0;
 
-    for (int i = 0; i < NLOOPS; ++i) {
+    for (int i = 0; i <= NLOOPS; ++i) {
       output = Output();
 
       Input *input_d, *input_h;
@@ -43,7 +43,7 @@ namespace cuda {
 
       const int threadsPerBlock = 512;
       const int blocks = (input.wordCounter + threadsPerBlock - 1) / threadsPerBlock;
-      cute::launch(cuda::rawtodigi_kernel, {blocks, threadsPerBlock, 0, stream}, input_d, output_d, true, true, false);
+      cute::launch(cuda::rawtodigi_kernel, {blocks, threadsPerBlock, 0, stream}, input_d, output_d, true, true, i == 0);
 
       CUTE_CHECK(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDefault, stream));
       CUTE_CHECK(cudaStreamSynchronize(stream));
@@ -59,7 +59,10 @@ namespace cuda {
       CUTE_CHECK(cudaFreeHost(input_h));
 
       auto diff = stop - start;
-      totaltime += std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      if (i != 0) {
+        totaltime += time;
+      }
     }
 
     totaltime /= NLOOPS;

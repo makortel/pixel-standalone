@@ -23,7 +23,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     totaltime = 0.;
 
-    for (int i = 0; i < NLOOPS; i++) {
+    for (int i = 0; i <= NLOOPS; i++) {
       output = Output();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -64,7 +64,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       alpaka::queue::enqueue(
           queue,
-          alpaka::kernel::createTaskKernel<Acc>(workDiv, rawtodigi_kernel(), input_d, output_d, true, true, false));
+          alpaka::kernel::createTaskKernel<Acc>(workDiv, rawtodigi_kernel(), input_d, output_d, true, true, i == 0));
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       alpaka::mem::view::copy(queue, output_hBuf, output_dBuf, size);
@@ -81,7 +81,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
       auto diff = stop - start;
-      totaltime += std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+      if (i != 0) {
+        totaltime += time;
+      }
     }
 
     totaltime /= NLOOPS;
