@@ -10,7 +10,7 @@ all: $(TARGETS)
 debug: $(TARGETS:%=%-debug)
 
 clean:
-	rm -r -f test-* debug-* $(BUILD) $(DEBUG)
+	rm -r -f test-* debug-* $(BUILD) $(DEBUG) env.sh
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -33,12 +33,15 @@ CXX_FLAGS := -O2 -std=c++14
 CXX_DEBUG := -g
 
 # CUDA compiler
+ifdef CUDA_BASE
 NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
 NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70
 NVCC_DEBUG := -g -lineinfo
 
 # CUDA flags for the host linker
-CUDA_LD_FLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcuda
+CUDA_LIBDIR   := $(CUDA_BASE)/lib64
+CUDA_LD_FLAGS := -L$(CUDA_LIBDIR) -lcudart -lcuda
+endif
 
 # boost flags
 ifdef BOOST_BASE
@@ -49,28 +52,46 @@ endif
 
 # TBB flags
 ifdef TBB_BASE
+TBB_LIBDIR    := $(TBB_BASE)/lib
 TBB_CXX_FLAGS := -I$(TBB_BASE)/include
-TBB_LD_FLAGS  := -L$(TBB_BASE)/lib -ltbb -lrt
+TBB_LD_FLAGS  := -L$(TBB_LIBDIR) -ltbb -lrt
 else
+TBB_LIBDIR    :=
 TBB_CXX_FLAGS :=
 TBB_LD_FLAGS  := -ltbb -lrt
 endif
 
 # alpaka flags
+ifdef ALPAKA_BASE
 ALPAKA_CXX_FLAGS := -I$(ALPAKA_BASE)/include $(BOOST_CXX_FLAGS)
 ALPAKA_DEBUG     := -DALPAKA_DEBUG=1
+endif
 
 # cupla flags
+ifdef CUPLA_BASE
+CUPLA_LIBDIR    := $(CUPLA_BASE)/lib
 CUPLA_CXX_FLAGS := $(ALPAKA_CXX_FLAGS) -I$(CUPLA_BASE)/include
 CUPLA_DEBUG     := $(ALPAKA_DEBUG)
-CUPLA_LD_FLAGS  := -L$(CUPLA_BASE)/lib -lcupla
+CUPLA_LD_FLAGS  := -L$(CUPLA_LIBDIR) -lcupla
+endif
 
 # oneAPI flags
+ifdef ONEAPI_BASE
+ifneq ($(wildcard $(ONEAPI_BASE)/lib/libsycl.so),)
+ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib
+else ifneq ($(wildcard $(ONEAPI_BASE)/lib64/libsycl.so),)
+ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib64
+else
+ONEAPI_BASE :=
+endif
+endif
+ifdef ONEAPI_BASE
 ONEAPI_CXX   := $(ONEAPI_BASE)/bin/clang++
-ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include -Wno-unknown-cuda-version
 ifdef CUDA_BASE
-ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_BASE)/lib/libpi_cuda.so)
+ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_BASE)/lib64/libpi_cuda.so)
 ONEAPI_CUDA_FLAGS  := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
+endif
 endif
 
 # Kokkos flags
@@ -90,7 +111,36 @@ endif
 GREEN  := '\033[32m'
 RED    := '\033[31m'
 YELLOW := '\033[38;5;220m'
+WHITE  := '\033[97m'
 RESET  := '\033[0m'
+
+# force the recreation of the environment file any time the Makefile is updated, before building any other target
+-include environment
+.PHONY: environment
+
+environment: env.sh
+
+env.sh: Makefile
+	@echo '#! /bin/bash' > $@
+	@echo -n 'export LD_LIBRARY_PATH=' >> $@
+ifdef TBB_LIBDIR
+	@echo -n '$(TBB_LIBDIR):' >> $@
+endif
+ifdef CUDA_LIBDIR
+	@echo -n '$(CUDA_LIBDIR):' >> $@
+endif
+ifdef CUPLA_LIBDIR
+	@echo -n '$(CUPLA_LIBDIR):' >> $@
+endif
+ifdef ONEAPI_LIBDIR
+	@echo -n '$(ONEAPI_LIBDIR):' >> $@
+endif
+	@echo '$$LD_LIBRARY_PATH' >> $@
+	@echo -e $(GREEN)Environment file$(RESET) regenerated, load the new envirnment with
+	@echo -e
+	@echo -e "  "$(WHITE)source env.sh$(RESET)
+	@echo -e
+
 
 # Naive CPU implementation
 naive: test-naive
