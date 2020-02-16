@@ -1,27 +1,28 @@
 # Pixel raw2digi test program
 
 The purpose of this test program is to experiment with various
-"performance portability" approaches.
+"performance portability" frameworks and libraries.
 
 ## Current implementations
 
 | Implementation | `make` target         | Executable (also `make` target) | `#ifdef` macros                                                                       |
 |----------------|-----------------------|---------------------------------|---------------------------------------------------------------------------------------|
-| Naive CPU      | `naive`               | `main-naive`                    | `DIGI_NAIVE`                                                                          |
-| CUDA           | `cuda`                | `main-cuda`                     | `DIGI_CUDA`                                                                           |
-| Alpaka on CPU  | `alpaka`              | `main-alpaka-ser` (sync)        | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`                                   |
-|                |                       | `main-alpaka-tbb` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`                                   |
-| Alpaka on GPU  |                       | `main-alpaka-gpu` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`                                          |
-| Alpaka on all  |                       | `main-alpaka`                   | `DIGI_ALPAKA`, `ALPAKA_ACC_*`                                                         |
-| Cupla on CPU   | `cupla`               | `main-cupla-seq-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
-|                |`                      | `main-cupla-seq-seq-sync`       | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
-|                |                       | `main-cupla-tbb-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
-|                |                       | `main-cupla-opm2-seq-async`     | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`   |
-| Cupla on GPU   |                       | `main-cupla-cuda-async`         | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
-| Kokkos on CPU  | `kokkos`              | `main-kokkos-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
-|                |                       | `main-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
-| Kokkos on GPU  |                       | `main-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
-| Intel oneAPI   | `oneapi`              | `main-oneapi`                   | `DIGI_ONEAPI`, `DIGI_ONEAPI_WORKAROUND`                                               |
+| Naive CPU      | `naive`               | `test-naive`                    | `DIGI_NAIVE`                                                                          |
+| CUDA           | `cuda`                | `test-cuda`                     | `DIGI_CUDA`                                                                           |
+| Alpaka         | `alpaka`              | `test-alpaka`                   | `DIGI_ALPAKA`, `ALPAKA_ACC_*`                                                         |
+|  - only on CPU |                       | `test-alpaka-ser` (sync)        | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`                                   |
+|                |                       | `test-alpaka-tbb` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`                                   |
+|  - only on GPU |                       | `test-alpaka-gpu` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`                                          |
+| Cupla          | `cupla`               | `test-cupla`                    | `DIGI_CUPLA`, `ALPAKA_ACC_*`                                                          |
+|  - only on CPU |                       | `test-cupla-seq-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                |                       | `test-cupla-seq-seq-sync`       | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=0`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
+|                |                       | `test-cupla-tbb-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`    |
+|                |                       | `test-cupla-opm2-seq-async`     | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`   |
+|  - only on GPU |                       | `test-cupla-cuda-async`         | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
+| Kokkos on CPU  | `kokkos`              | `test-kokkos-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
+|                |                       | `test-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
+| Kokkos on GPU  |                       | `test-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
+| Intel oneAPI   | `oneapi`              | `test-oneapi`                   | `DIGI_ONEAPI`                                                                         |
 
 
 The per-technology targets build all the executables of that
@@ -30,15 +31,17 @@ directly as make targets.
 
 ### Naive CPU
 
-The only requirements for "naive CPU" are `g++` supporting C++ 17 in the `$PATH`.
+The only requirements for "naive CPU" are `g++` supporting C++17 in the `$PATH`.
 
 ### CUDA
 
 The CUDA test program requires a recent CUDA version (`nvcc`
 supporting C++14 and `--expt-relaxed-constexpr`) and a machine with
-GPU.
+an NVIDIA GPU.
+By deafult, the binaries target SM 3.5, 5.0,  6.0 and 7.0. Different targets can
+be added in the `Makefile`.
 
-### Alpaka [release 0.4.0](https://github.com/ComputationalRadiationPhysics/alpaka/tree/release-0.4.0)
+### Alpaka [release 0.4.0](https://github.com/ComputationalRadiationPhysics/alpaka/tree/0.4.0)
 
 The Alpaka test program can be compiled for different backends; so far it has been
 tested with the CUDA, serial, and TBB backends.
@@ -46,17 +49,20 @@ The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.
 and gcc 8.x.
 
 The backend is chosen at compile time setting one of the `ALPAKA_ACC` preprocessor
-symbols. The `main-alpaka` binary tries to exercise all available backends.
+symbols. The `test-alpaka` binary tries to exercise all available backends.
 
 See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
 on the Patatrack Wiki for installing Alpaka and Cupla.
 
-### Cupla [dev](https://github.com/ComputationalRadiationPhysics/cupla/tree/dev) branch
+### Cupla [release 0.2.0](https://github.com/ComputationalRadiationPhysics/cupla/tree/0.2.0)
 
 The Cupla test program can be compiled for different backends; so far it has been
 tested with the CUDA, serial, TBB and OpenMP backends.
 The CUDA backend requires CUDA 9.2 through 10.2, and has been tested with gcc 7.x
 and gcc 8.x.
+
+The backend is chosen at compile time setting one of the `ALPAKA_ACC` preprocessor
+symbols. The `test-cupla` binary tries to exercise all available backends.
 
 See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
 on the Patatrack Wiki for installing Alpaka and Cupla.
