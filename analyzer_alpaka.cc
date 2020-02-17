@@ -55,7 +55,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       Vec elementsPerThread(Vec::all(1));
       Vec threadsPerBlock(Vec::all(512));
       Vec blocksPerGrid(Vec::all((input.wordCounter + 512 - 1) / 512));
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || ALPAKA_ACC_CPU_BT_OMP4_ENABLED
       // on the GPU, run with 512 threads in parallel per block, each looking at a single element
       // on the CPU, run serially with a single thread per block, over 512 elements
       std::swap(threadsPerBlock, elementsPerThread);
