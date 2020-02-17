@@ -4,135 +4,107 @@
 #include <memory>
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 
+#include "analyzer_oneapi.h"
 #include "input.h"
 #include "modules.h"
 #include "output.h"
-#include "rawtodigi_oneapi.h"
 
 namespace {
   constexpr int NLOOPS = 100;
 }
 
-enum DeviceType { default_device = 0, host_device, cpu_device, gpu_device };
+enum class DeviceType { all_devices = -1, default_device = 0, host_device, cpu_device, gpu_device, cuda_device };
 
-void exception_handler(cl::sycl::exception_list exceptions) {
-  for (auto const &exc_ptr : exceptions) {
-    try {
-      std::rethrow_exception(exc_ptr);
-    } catch (cl::sycl::exception const &e) {
-      std::cerr << "Caught asynchronous SYCL exception:\n" << e.what() << std::endl;
-    }
+class cuda_selector : public cl::sycl::device_selector {
+public:
+  int operator()(const cl::sycl::device & device) const override {
+    std::string const& name = device.get_info<cl::sycl::info::device::name>();
+    std::string const& vendor = device.get_info<cl::sycl::info::device::vendor>();
+    if (device.is_gpu() and (name.find("NVIDIA") != std::string::npos or vendor.find("NVIDIA") != std::string::npos)) {
+      return 1000;
+    };
+    return -1;
   }
+};
+
+template <typename T>
+cl::sycl::vector_class<cl::sycl::device> get_devices(T selector) {
+  auto const& all_devices = cl::sycl::device::get_devices();
+  cl::sycl::vector_class<cl::sycl::device> devices;
+  auto size = std::count_if(all_devices.begin(), all_devices.end(), [selector](cl::sycl::device device){ return selector(device) > 0; });
+  devices.reserve(size);
+  std::copy_if(all_devices.begin(), all_devices.end(), std::back_inserter(devices), [selector](cl::sycl::device device){ return selector(device) > 0; });
+  return devices;
 }
 
 int main(int argc, char **argv) {
-  DeviceType device_type = default_device;
+  DeviceType device_type = DeviceType::all_devices;
   if (argc > 1) {
-    if (std::strcmp(argv[1], "--host") == 0)
-      device_type = host_device;
+    if (std::strcmp(argv[1], "--all") == 0)
+      device_type = DeviceType::all_devices;
+    else if (std::strcmp(argv[1], "--default") == 0)
+      device_type = DeviceType::default_device;
+    else if (std::strcmp(argv[1], "--host") == 0)
+      device_type = DeviceType::host_device;
     else if (std::strcmp(argv[1], "--cpu") == 0)
-      device_type = cpu_device;
+      device_type = DeviceType::cpu_device;
     else if (std::strcmp(argv[1], "--gpu") == 0)
-      device_type = gpu_device;
+      device_type = DeviceType::gpu_device;
+    else if (std::strcmp(argv[1], "--cuda") == 0)
+      device_type = DeviceType::cuda_device;
     else
       std::cout << "Ignoring unknown option " << argv[1] << std::endl;
   }
 
-  cl::sycl::device device;
+  cl::sycl::vector_class<cl::sycl::device> devices;
+
   switch (device_type) {
-    case host_device: {
-      cl::sycl::host_selector device_selector;
-      device = cl::sycl::device{device_selector};
+    case DeviceType::all_devices: {
+      devices = cl::sycl::device::get_devices();
       break;
     }
-    case cpu_device: {
-      cl::sycl::cpu_selector device_selector;
-      device = cl::sycl::device{device_selector};
+    case DeviceType::default_device: {
+      cl::sycl::default_selector selector;
+      devices.push_back(cl::sycl::device{selector});
       break;
     }
-    case gpu_device: {
-      cl::sycl::gpu_selector device_selector;
-      device = cl::sycl::device{device_selector};
+    case DeviceType::host_device: {
+      cl::sycl::host_selector selector;
+      devices.push_back(cl::sycl::device{selector});
       break;
     }
-    case default_device:
-    default: {
-      cl::sycl::default_selector device_selector;
-      device = cl::sycl::device{device_selector};
+    case DeviceType::cpu_device: {
+      cl::sycl::cpu_selector selector;
+      devices = ::get_devices(selector);
+      break;
+    }
+    case DeviceType::gpu_device: {
+      cl::sycl::gpu_selector selector;
+      devices = ::get_devices(selector);
+      break;
+    }
+    case DeviceType::cuda_device: {
+      cuda_selector selector;
+      devices = ::get_devices(selector);
+      break;
     }
   }
-
-  cl::sycl::context ctx{device};
-  cl::sycl::queue queue{device, exception_handler};
-  std::cout << "Running on SYCL device " << device.get_info<cl::sycl::info::device::name>() << ", driver version "
-            << device.get_info<cl::sycl::info::device::driver_version>() << std::endl;
 
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
-  int totaltime = 0;
+  std::unique_ptr<Output> output = std::make_unique<Output>();
+  double totaltime = 0;
 
-  std::unique_ptr<Output> output;
-#ifdef DIGI_ONEAPI_WORKAROUND
-  output = std::make_unique<Output>();
-#endif  // DIGI_ONEAPI_WORKAROUND
-  for (int i = 0; i < NLOOPS; ++i) {
-#ifndef DIGI_ONEAPI_WORKAROUND
-    output = std::make_unique<Output>();
-#endif  // ! DIGI_ONEAPI_WORKAROUND
-
-    auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), device, ctx);
-    if (input_d == nullptr) {
-      std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of device memory" << std::endl;
-      exit(1);
-    }
-    auto input_h = (Input *)cl::sycl::malloc_host(sizeof(Input), ctx);
-    if (input_h == nullptr) {
-      std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of host memory" << std::endl;
-      exit(1);
-    }
-    std::memcpy(input_h, &input, sizeof(Input));
-
-    auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), device, ctx);
-    if (output_d == nullptr) {
-      std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of device memory" << std::endl;
-      exit(1);
-    }
-    auto output_h = (Output *)cl::sycl::malloc_host(sizeof(Output), ctx);
-    if (output_h == nullptr) {
-      std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of host memory" << std::endl;
-      exit(1);
-    }
-    output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);
-
-    auto start = std::chrono::high_resolution_clock::now();
-    queue.memcpy((void *)input_d, (void *)input_h, sizeof(Input));
-    queue.memcpy((void *)output_d, (void *)output_h, sizeof(Output));
-
-    oneapi::rawtodigi(input_d, output_d, input.wordCounter, true, true, false, queue);
-
-    queue.memcpy((void *)output_h, (void *)output_d, sizeof(Output));
-    queue.wait_and_throw();
-    auto stop = std::chrono::high_resolution_clock::now();
-
-    output_h->err.set_data(output_h->err_d);
-    std::memcpy(output.get(), output_h, sizeof(Output));
-    output->err.set_data(output->err_d);
-
-    cl::sycl::free(output_d, ctx);
-    cl::sycl::free(input_d, ctx);
-    cl::sycl::free(output_h, ctx);
-    cl::sycl::free(input_h, ctx);
-
-    auto diff = stop - start;
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-    totaltime += time;
+  for (auto & device: devices) {
+    std::cout << std::endl;
+    std::cout << "Running on SYCL device " << device.get_info<cl::sycl::info::device::name>() << ", driver version "
+              << device.get_info<cl::sycl::info::device::driver_version>() << std::endl;
+    oneapi::analyze(device, input, *output, totaltime);
+    std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
+              << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
   }
-
-  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-            << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
 
   return 0;
 }
