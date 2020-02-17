@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
 #ifdef ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
   output = std::make_unique<Output>();
-  std::cout << "\nRunning with the non-blocking CPU OpenMP 2 backend..." << std::endl;
+  std::cout << "\nRunning with the non-blocking CPU OpenMP 2.0 backend..." << std::endl;
   cupla_omp2_seq_async::analyze(input, *output, totaltime);
   std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
             << std::endl;

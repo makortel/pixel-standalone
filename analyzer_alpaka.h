@@ -12,6 +12,10 @@ namespace alpaka_tbb_async {
   void analyze(Input const& input, Output& output, double& totaltime);
 }
 
+namespace alpaka_omp2_async {
+  void analyze(Input const& input, Output& output, double& totaltime);
+}
+
 namespace alpaka_cuda_async {
   void analyze(Input const& input, Output& output, double& totaltime);
 }
