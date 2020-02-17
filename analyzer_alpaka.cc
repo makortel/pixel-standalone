@@ -61,6 +61,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       std::swap(threadsPerBlock, elementsPerThread);
 #endif
       const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+      if (i == 0) {
+        std::cout << "blocks per grid: " << blocksPerGrid << ", threads per block: " << threadsPerBlock << ", elements per thread: " << elementsPerThread << std::endl;
+      }
 
       alpaka::queue::enqueue(
           queue,

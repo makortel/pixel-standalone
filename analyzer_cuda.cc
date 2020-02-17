@@ -43,6 +43,9 @@ namespace cuda {
 
       const int threadsPerBlock = 512;
       const int blocks = (input.wordCounter + threadsPerBlock - 1) / threadsPerBlock;
+      if (i == 0) {
+        std::cout << "blocks per grid: " << blocks << ", threads per block: " << threadsPerBlock << std::endl;
+      }
       cute::launch(cuda::rawtodigi_kernel, {blocks, threadsPerBlock, 0, stream}, input_d, output_d, true, true, i == 0);
 
       CUTE_CHECK(cudaMemcpyAsync(output_h, output_d, sizeof(Output), cudaMemcpyDefault, stream));
