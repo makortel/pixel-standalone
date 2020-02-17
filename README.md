@@ -25,7 +25,6 @@ The purpose of this test program is to experiment with various
 | Intel oneAPI   | `oneapi`              | `test-oneapi`                   | `DIGI_ONEAPI`                                                                         |
 
 
-
 The per-technology targets build all the executables of that
 technology. For finer-grained compilation, use the executable names
 directly as make targets.
