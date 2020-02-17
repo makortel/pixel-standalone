@@ -12,6 +12,7 @@ The purpose of this test program is to experiment with various
 | Alpaka         | `alpaka`              | `test-alpaka`                   | `DIGI_ALPAKA`, `ALPAKA_ACC_*`                                                         |
 |  - only on CPU |                       | `test-alpaka-ser` (sync)        | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`                                   |
 |                |                       | `test-alpaka-tbb` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED`                                   |
+|                |                       | `test-alpaka-omp2` (async)      | `DIGI_ALPAKA`, `ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED`                                  |
 |  - only on GPU |                       | `test-alpaka-gpu` (async)       | `DIGI_ALPAKA`, `ALPAKA_ACC_GPU_CUDA_ENABLED`                                          |
 | Cupla          | `cupla`               | `test-cupla`                    | `DIGI_CUPLA`, `ALPAKA_ACC_*`                                                          |
 |  - only on CPU |                       | `test-cupla-seq-seq-async`      | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED`    |
