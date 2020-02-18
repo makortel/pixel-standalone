@@ -20,6 +20,10 @@ namespace cupla_omp2_seq_async {
   void analyze(Input const& input, Output& output, double& totaltime);
 }
 
+namespace cupla_omp4_omp4_async {
+  void analyze(Input const& input, Output& output, double& totaltime);
+}
+
 namespace cupla_cuda_async {
   void analyze(Input const& input, Output& output, double& totaltime);
 }

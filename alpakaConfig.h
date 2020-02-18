@@ -81,4 +81,21 @@ namespace alpaka_omp2_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp2_async
 #endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 
+#ifdef ALPAKA_ACC_CPU_BT_OMP4_ENABLED
+#define ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
+namespace alpaka_omp4_async {
+  using namespace alpaka_common;
+  using Acc = alpaka::acc::AccCpuOmp4<Dim, Extent>;
+  using DevAcc = alpaka::dev::Dev<Acc>;
+  using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using Queue = alpaka::queue::QueueCpuNonBlocking;
+}  // namespace alpaka_omp4_async
+
+#endif  // ALPAKA_ACC_CPU_BT_OMP4_ENABLED
+
+#ifdef ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
+#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
+#endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
+
 #endif  // alpakaConfig_h_
