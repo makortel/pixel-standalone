@@ -365,8 +365,8 @@ namespace kokkos {
                                         bool includeErrors,
                                         bool debug,
                                         const int32_t index) {
-    const Input* input = &inputView(0);
-    Ouput* output = &outputView(0);
+    const Input* input = inputView.data();
+    Output* output = outputView.data();
     const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
     const uint32_t* word = input->word;
     const uint8_t* fedIds = input->fedId;

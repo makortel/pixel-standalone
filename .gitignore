@@ -3,3 +3,5 @@ test-*
 debug-*
 build/
 env.sh
+Kokkos*
+libkokkos.a
