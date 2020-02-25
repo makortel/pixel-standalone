@@ -92,10 +92,14 @@ endif
 endif
 ifdef ONEAPI_BASE
 ONEAPI_CXX   := $(ONEAPI_BASE)/bin/clang++
-ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include -Wno-unknown-cuda-version
+ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+HAVE_LLVM_11 := $(wildcard $(ONEAPI_BASE)/bin/clang-11)
+ifdef HAVE_LLVM_11
+ONEAPI_FLAGS := $(ONEAPI_FLAGS) -Wno-unknown-cuda-version
+endif
 ifdef CUDA_BASE
-ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_BASE)/lib64/libpi_cuda.so)
-ONEAPI_CUDA_FLAGS  := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
+ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_LIBDIR)/libpi_cuda.so)
+ONEAPI_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE)
 endif
 endif
 
@@ -136,6 +140,9 @@ environment: env.sh
 
 env.sh: Makefile
 	@echo '#! /bin/bash' > $@
+ifdef ONEAPI_LIBDIR
+	@echo 'export PATH=$(ONEAPI_BASE)/bin:$$PATH' >> $@
+endif
 	@echo -n 'export LD_LIBRARY_PATH=' >> $@
 ifdef TBB_LIBDIR
 	@echo -n '$(TBB_LIBDIR):' >> $@
