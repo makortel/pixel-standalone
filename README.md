@@ -68,29 +68,28 @@ symbols. The `test-cupla` binary tries to exercise all available backends.
 See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
 on the Patatrack Wiki for installing Alpaka and Cupla.
 
-### Kokkos
+### Kokkos [release 3.0.00](https://github.com/kokkos/kokkos/tree/3.0.00)
 
-#### Install Kokkos
+The Kokkos test programs require Kokkos' source. Run something along
+the following before compiling any of the test programs
 ```bash
 # In some directory
-git clone https://github.com/kokkos/kokkos.git
-cd kokkos
-export KOKKOS_SRC=$PWD
-
-# Define installation path
-export KOKKOS_BASE=...
-
-# In some other, temporary directory
-# CPU-only
-$KOKKOS_SRC/generate_makefile.bash --prefix=$KOKKOS_BASE --cxxstandard=c++17 --with-openmp --with-pthread --with-serial [--with-cuda=PATH_TO_CUDA]
-# with CUDA,
-# $KOKKOS_SRC/generate_makefile.bash --prefix=$KOKKOS_BASE --cxxstandard=c++14 --with-openmp --with-pthread --with-serial --with-cuda=<PATH_TO_CUDA> --arch=Pascal60 --with-cuda-options=enable_lambda
-make kokkoslib
-make install
+git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git
+export KOKKOS_BASE=$PWD/kokkos
 ```
 
-In principle the following fix is needed, unless `$KOKKOS_SRC` is kept alive as well
-* Edit `$KOKKOS_BASE/Makefile.kokkos` to fix the path to `nvcc_wrapper` to point to `$KOKKOS_BASE` instead of `$KOKKOS_SRC`
+If CUDA is enabled (i.e. `$CUDA_BASE` points to an existing
+directory), the `$CUDA_BASE/bin` should be put in `$PATH` before
+compilation. In addition, all Kokkos test programs need to be run on a
+machine with GPU.
+
+If Kokkos is enabled (i.e.`$KOKKOS_BASE` is set), everything will be
+compiled with `nvcc_wrapper` (also other targets than Kokkos test
+programs).
+
+Note that Kokkos' runtime library gets built on the fly, and the
+`libkokkos.a` and the intermediate object files are placed to the
+working directory.
 
 ### Intel oneAPI
 

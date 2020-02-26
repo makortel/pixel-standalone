@@ -10,7 +10,7 @@ all: $(TARGETS)
 debug: $(TARGETS:%=%-debug)
 
 clean:
-	rm -r -f test-* debug-* $(BUILD) $(DEBUG) env.sh
+	rm -r -f test-* debug-* $(BUILD) Kokkos*.o libkokkos.a $(DEBUG) env.sh
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -103,13 +103,22 @@ endif
 # recommended to include only after the first target, see
 # https://github.com/kokkos/kokkos/wiki/Compiling#42-using-kokkos-makefile-system
 ifdef KOKKOS_BASE
-  include $(KOKKOS_BASE)/Makefile.kokkos
-  ifeq ($(KOKKOS_INTERNAL_USE_CUDA),1)
-    CXX_KOKKOS := $(NVCC_WRAPPER)
+  KOKKOS_DEVICES := "Serial,OpenMP"
+  KOKKOS_ARCH := "SNB"
+  KOKKOS_CXX_STANDARD := c++14
+  # In theory this would be the right way, but the mechanism seems to be broken in Kokkos ATM
+  #KOKKOS_CUDA_OPTIONS := "enable_constexpr"
+  # Stuff in Makefile.kokkos uses KOKKOS_PATH
+  KOKKOS_PATH := $(KOKKOS_BASE)
+  # If CUDA is enabled, Makefile.kokkos complains on non-nvcc compiler
+  CXX_ORIG := $(CXX)
+  ifneq ($(wildcard $(CUDA_BASE)),)
+    KOKKOS_DEVICES := "$(KOKKOS_DEVICES),Cuda"
+    KOKKOS_ARCH := "$(KOKKOS_ARC),Volta70"
+    CXX := $(KOKKOS_BASE)/bin/nvcc_wrapper
     KOKKOS_CXXFLAGS += --expt-relaxed-constexpr
-  else
-    CXX_KOKKOS := $(CXX)
   endif
+  include $(KOKKOS_BASE)/Makefile.kokkos
 endif
 
 # color highlights for ANSI terminals
@@ -586,16 +595,44 @@ kokkos: test-kokkos-serial test-kokkos-openmp test-kokkos-cuda
 kokkos-debug:
 
 # Kokkos implementation, serial backend
-test-kokkos-serial: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+$(BUILD)/rawtodigi_kokkos.serial.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/analyzer_kokkos.serial.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/main_kokkos.serial.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ -c $<
+
+# KOKKOS_CXXFLAGS needed for -fopenmp in the final link
+test-kokkos-serial: $(BUILD)/main_kokkos.serial.o $(BUILD)/analyzer_kokkos.serial.o $(BUILD)/rawtodigi_kokkos.serial.o | $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # Kokkos implementation, OpenMP backend
-test-kokkos-openmp: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+$(BUILD)/rawtodigi_kokkos.omp.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/analyzer_kokkos.omp.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/main_kokkos.omp.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -o $@ -c $<
+
+test-kokkos-openmp:  $(BUILD)/main_kokkos.omp.o $(BUILD)/analyzer_kokkos.omp.o $(BUILD)/rawtodigi_kokkos.omp.o | $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # Kokkos implementation, CUDA backend
-test-kokkos-cuda: main_kokkos.cc rawtodigi_kokkos.h
-	$(CXX_KOKKOS) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ main_kokkos.cc $(KOKKOS_LIBS)
+$(BUILD)/rawtodigi_kokkos.cuda.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/analyzer_kokkos.cuda.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+
+$(BUILD)/main_kokkos.cuda.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ -c $<
+
+test-kokkos-cuda:  $(BUILD)/main_kokkos.cuda.o $(BUILD)/analyzer_kokkos.cuda.o $(BUILD)/rawtodigi_kokkos.cuda.o | $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 else
 kokkos:
