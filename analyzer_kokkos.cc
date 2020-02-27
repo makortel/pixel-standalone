@@ -12,9 +12,9 @@ namespace {
 #ifdef DIGI_KOKKOS_SERIAL
 using KokkosExecSpace = Kokkos::Serial;
 #elif defined DIGI_KOKKOS_OPENMP
-using KokkosExecSpace = Kokkos::OpenMP
+using KokkosExecSpace = Kokkos::OpenMP;
 #elif defined DIGI_KOKKOS_CUDA
-using KokkosExecSpace = Kokkos::Cuda
+using KokkosExecSpace = Kokkos::Cuda;
 #endif
 
 namespace kokkos {
