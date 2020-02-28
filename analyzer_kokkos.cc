@@ -59,7 +59,9 @@ namespace kokkos {
 
       auto diff = stop - start;
       auto time = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
-      totaltime += time;
+      if (i != 0) {
+        totaltime += time;
+      }
     }
 
     totaltime /= NLOOPS;
