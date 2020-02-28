@@ -3,6 +3,14 @@
 The purpose of this test program is to experiment with various
 "performance portability" frameworks and libraries.
 
+## Overall structure
+
+The test programs are divided in three units
+* `main_*.cc`: contains `main()`, reads input, prints total timing. Plays the role of the "experiment framework".
+* `analyzer_*.cc`: plays the role of a framework module (even though the "event loop" is there). Calls the memory tranfers (if necessary), and the computational kernel.
+* `rawtodigi_*.cc`: contains the computational kernel (which is mostly just shuffling bytes around memory)
+
+
 ## Current implementations
 
 | Implementation | `make` target         | Executable (also `make` target) | `#ifdef` macros                                                                       |
