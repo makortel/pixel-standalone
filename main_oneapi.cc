@@ -10,12 +10,6 @@
 #include "modules.h"
 #include "output.h"
 
-namespace {
-  constexpr int NLOOPS = 100;
-}
-
-enum class DeviceType { all_devices = -1, default_device = 0, host_device, cpu_device, gpu_device, cuda_device };
-
 class cuda_selector : public cl::sycl::device_selector {
 public:
   int operator()(const cl::sycl::device & device) const override {
@@ -103,7 +97,7 @@ int main(int argc, char **argv) {
               << device.get_info<cl::sycl::info::device::driver_version>() << std::endl;
     oneapi::analyze(device, input, *output, totaltime);
     std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in "
-              << (static_cast<double>(totaltime) / NLOOPS) << " us" << std::endl;
+              << totaltime << " us" << std::endl;
   }
 
   return 0;
