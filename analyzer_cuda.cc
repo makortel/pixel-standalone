@@ -8,13 +8,10 @@
 #include "cute/check.h"
 #include "cute/launch.h"
 #include "input.h"
+#include "loops.h"
 #include "modules.h"
 #include "output.h"
 #include "rawtodigi_cuda.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 namespace cuda {
 

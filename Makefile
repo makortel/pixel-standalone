@@ -211,7 +211,7 @@ alpaka-debug: debug-alpaka-serial debug-alpaka-tbb debug-alpaka-omp2 debug-alpak
 $(BUILD)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+$(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
 $(BUILD)/main_alpaka.serial.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
@@ -223,7 +223,7 @@ test-alpaka-serial: $(BUILD)/main_alpaka.serial.o $(BUILD)/analyzer_alpaka.seria
 $(DEBUG)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
 
-$(DEBUG)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
+$(DEBUG)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
 
 $(DEBUG)/main_alpaka.serial.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
@@ -236,7 +236,7 @@ debug-alpaka-serial: $(DEBUG)/main_alpaka.serial.o $(DEBUG)/analyzer_alpaka.seri
 $(BUILD)/rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(TBB_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+$(BUILD)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(TBB_CXX_FLAGS) -o $@ -c $<
 
 $(BUILD)/main_alpaka.tbb.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
@@ -248,7 +248,7 @@ test-alpaka-tbb: $(BUILD)/main_alpaka.tbb.o $(BUILD)/analyzer_alpaka.tbb.o $(BUI
 $(DEBUG)/rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(TBB_CXX_FLAGS) -o $@ -c $<
 
-$(DEBUG)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
+$(DEBUG)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(TBB_CXX_FLAGS) -o $@ -c $<
 
 $(DEBUG)/main_alpaka.tbb.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
@@ -261,7 +261,7 @@ debug-alpaka-tbb: $(DEBUG)/main_alpaka.tbb.o $(DEBUG)/analyzer_alpaka.tbb.o $(DE
 $(BUILD)/rawtodigi_alpaka.omp2.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+$(BUILD)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
 
 $(BUILD)/main_alpaka.omp2.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
@@ -273,7 +273,7 @@ test-alpaka-omp2: $(BUILD)/main_alpaka.omp2.o $(BUILD)/analyzer_alpaka.omp2.o $(
 $(DEBUG)/rawtodigi_alpaka.omp2.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
 
-$(DEBUG)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
+$(DEBUG)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
 
 $(DEBUG)/main_alpaka.omp2.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
@@ -286,7 +286,7 @@ debug-alpaka-omp2: $(DEBUG)/main_alpaka.omp2.o $(DEBUG)/analyzer_alpaka.omp2.o $
 $(BUILD)/rawtodigi_alpaka.omp4.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+$(BUILD)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
 
 $(BUILD)/main_alpaka.omp4.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
@@ -298,7 +298,7 @@ test-alpaka-omp4: $(BUILD)/main_alpaka.omp4.o $(BUILD)/analyzer_alpaka.omp4.o $(
 $(DEBUG)/rawtodigi_alpaka.omp4.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
 
-$(DEBUG)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
+$(DEBUG)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
 
 $(DEBUG)/main_alpaka.omp4.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
@@ -312,7 +312,7 @@ ifdef CUDA_BASE
 $(BUILD)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) -o $@ -x cu -dc $<
 
-$(BUILD)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+$(BUILD)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) -o $@ -x cu -dc $<
 
 $(BUILD)/alpaka.dlink.o: $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o
@@ -327,7 +327,7 @@ test-alpaka-cuda: $(BUILD)/main_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o $(
 $(DEBUG)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) $(ALPAKA_DEBUG) -o $@ -x cu -dc $<
 
-$(DEBUG)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
+$(DEBUG)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) $(ALPAKA_DEBUG) -o $@ -x cu -dc $<
 
 $(DEBUG)/alpaka.dlink.o: $(DEBUG)/rawtodigi_alpaka.cuda.o $(DEBUG)/analyzer_alpaka.cuda.o
@@ -598,7 +598,7 @@ kokkos-debug:
 $(BUILD)/rawtodigi_kokkos.serial.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
-$(BUILD)/analyzer_kokkos.serial.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+$(BUILD)/analyzer_kokkos.serial.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkos.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkos.serial.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
@@ -612,7 +612,7 @@ test-kokkos-serial: $(BUILD)/main_kokkos.serial.o $(BUILD)/analyzer_kokkos.seria
 $(BUILD)/rawtodigi_kokkos.omp.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
-$(BUILD)/analyzer_kokkos.omp.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+$(BUILD)/analyzer_kokkos.omp.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkos.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkos.omp.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
@@ -625,7 +625,7 @@ test-kokkos-openmp:  $(BUILD)/main_kokkos.omp.o $(BUILD)/analyzer_kokkos.omp.o $
 $(BUILD)/rawtodigi_kokkos.cuda.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
-$(BUILD)/analyzer_kokkos.cuda.o: analyzer_kokkos.cc analyzer_kokkos.h input.h output.h rawtodigi_kokkos.h | $(BUILD)
+$(BUILD)/analyzer_kokkos.cuda.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkos.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkos.cuda.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)

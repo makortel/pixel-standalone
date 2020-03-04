@@ -4,13 +4,10 @@
 #include "alpakaConfig.h"
 #include "analyzer_alpaka.h"
 #include "input.h"
+#include "loops.h"
 #include "output.h"
 #include "pixelgpudetails.h"
 #include "rawtodigi_alpaka.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

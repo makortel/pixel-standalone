@@ -2,12 +2,9 @@
 
 #include "analyzer_kokkos.h"
 #include "input.h"
+#include "loops.h"
 #include "output.h"
 #include "rawtodigi_kokkos.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 #ifdef DIGI_KOKKOS_SERIAL
 using KokkosExecSpace = Kokkos::Serial;
