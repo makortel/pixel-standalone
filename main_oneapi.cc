@@ -23,66 +23,52 @@ public:
 };
 
 template <typename T>
-cl::sycl::vector_class<cl::sycl::device> get_devices(T selector) {
+void get_devices(T selector, cl::sycl::vector_class<cl::sycl::device> & devices) {
   auto const& all_devices = cl::sycl::device::get_devices();
-  cl::sycl::vector_class<cl::sycl::device> devices;
   auto size = std::count_if(all_devices.begin(), all_devices.end(), [selector](cl::sycl::device device){ return selector(device) > 0; });
-  devices.reserve(size);
+  devices.reserve(devices.size() + size);
   std::copy_if(all_devices.begin(), all_devices.end(), std::back_inserter(devices), [selector](cl::sycl::device device){ return selector(device) > 0; });
+}
+
+template <typename T>
+cl::sycl::vector_class<cl::sycl::device> get_devices(T selector) {
+  cl::sycl::vector_class<cl::sycl::device> devices;
+  get_devices(selector, devices);
   return devices;
 }
 
 int main(int argc, char **argv) {
-  DeviceType device_type = DeviceType::all_devices;
-  if (argc > 1) {
-    if (std::strcmp(argv[1], "--all") == 0)
-      device_type = DeviceType::all_devices;
-    else if (std::strcmp(argv[1], "--default") == 0)
-      device_type = DeviceType::default_device;
-    else if (std::strcmp(argv[1], "--host") == 0)
-      device_type = DeviceType::host_device;
-    else if (std::strcmp(argv[1], "--cpu") == 0)
-      device_type = DeviceType::cpu_device;
-    else if (std::strcmp(argv[1], "--gpu") == 0)
-      device_type = DeviceType::gpu_device;
-    else if (std::strcmp(argv[1], "--cuda") == 0)
-      device_type = DeviceType::cuda_device;
+  cl::sycl::vector_class<cl::sycl::device> devices;
+  bool selected = false;
+
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--default") == 0) {
+      devices.emplace_back(cl::sycl::default_selector{});
+      selected = true;
+    }
+    else if (std::strcmp(argv[i], "--host") == 0) {
+      devices.emplace_back(cl::sycl::host_selector{});
+      selected = true;
+    }
+    else if (std::strcmp(argv[i], "--cpu") == 0) {
+      ::get_devices(cl::sycl::cpu_selector{}, devices);
+      selected = true;
+    }
+    else if (std::strcmp(argv[i], "--gpu") == 0) {
+      ::get_devices(cl::sycl::gpu_selector{}, devices);
+      selected = true;
+    }
+    else if (std::strcmp(argv[i], "--cuda") == 0) {
+      ::get_devices(cuda_selector{}, devices);
+      selected = true;
+    }
     else
-      std::cout << "Ignoring unknown option " << argv[1] << std::endl;
+      std::cout << "Ignoring unknown option " << argv[i] << std::endl;
   }
 
-  cl::sycl::vector_class<cl::sycl::device> devices;
-
-  switch (device_type) {
-    case DeviceType::all_devices: {
-      devices = cl::sycl::device::get_devices();
-      break;
-    }
-    case DeviceType::default_device: {
-      cl::sycl::default_selector selector;
-      devices.push_back(cl::sycl::device{selector});
-      break;
-    }
-    case DeviceType::host_device: {
-      cl::sycl::host_selector selector;
-      devices.push_back(cl::sycl::device{selector});
-      break;
-    }
-    case DeviceType::cpu_device: {
-      cl::sycl::cpu_selector selector;
-      devices = ::get_devices(selector);
-      break;
-    }
-    case DeviceType::gpu_device: {
-      cl::sycl::gpu_selector selector;
-      devices = ::get_devices(selector);
-      break;
-    }
-    case DeviceType::cuda_device: {
-      cuda_selector selector;
-      devices = ::get_devices(selector);
-      break;
-    }
+  // run on all devices by default
+  if (not selected) {
+    devices = cl::sycl::device::get_devices();
   }
 
   Input input = read_input();
