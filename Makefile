@@ -24,7 +24,7 @@ TBB_BASE    :=
 CUDA_BASE   := /usr/local/cuda
 ALPAKA_BASE := /usr/local/alpaka/alpaka
 CUPLA_BASE  := /usr/local/alpaka/cupla
-ONEAPI_BASE := /opt/intel/inteloneapi/compiler/latest/linux
+ONEAPI_BASE := /opt/sycl/latest
 DPCT_BASE   := /opt/intel/inteloneapi/dpcpp-ct/latest
 
 # host compiler
@@ -651,12 +651,12 @@ endif
 
 ifdef ONEAPI_BASE
 oneapi: test-oneapi test-oneapi-opencl test-oneapi-cuda
-	@echo -e $(GREEN)oneAPI targets built$(RESET)
+	@echo -e $(GREEN)Intel oneAPI targets built$(RESET)
 
 oneapi-debug: debug-oneapi debug-oneapi-opencl debug-oneapi-cuda
-	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
+	@echo -e $(GREEN)Intel oneAPI debug targets built$(RESET)
 
-# oneAPI implementation
+# Intel oneAPI implementation
 test-oneapi-opencl: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
 	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=spir64-*-*-sycldevice $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
@@ -693,9 +693,9 @@ endif
 
 else
 oneapi:
-	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI toolchain not found$(RESET), oneAPI targets will not be built
 
 oneapi-debug:
-	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI toolchain not found$(RESET), oneAPI debug targets will not be built
 
 endif

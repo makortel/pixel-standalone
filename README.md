@@ -32,6 +32,8 @@ The test programs are divided in three units
 |                |                       | `test-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
 | Kokkos on GPU  |                       | `test-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
 | Intel oneAPI   | `oneapi`              | `test-oneapi`                   | `DIGI_ONEAPI`                                                                         |
+|  - OpenCL      |                       | `test-oneapi-opencl`            | `DIGI_ONEAPI`                                                                         |
+|  - CUDA        |                       | `test-oneapi-cuda`              | `DIGI_ONEAPI`                                                                         |
 
 
 The per-technology targets build all the executables of that
@@ -101,9 +103,21 @@ working directory.
 
 ### Intel oneAPI
 
-The beta version of Intel oneAPI can be obtained from https://software.intel.com/en-us/oneapi .
+The test program relies on the In-Order Queues and Unified Shared Memory extensions
+to SYCL 1.2.1, which are currently available in Intel oneAPI toolchain and in the
+LLVM SYCL branch.
 
-The tests programs choose an OpenCL device at runtime using the `cl::sycl::default_selector`.
+The beta version of Intel oneAPI can be obtained from
+https://software.intel.com/en-us/oneapi .
+
+The in-development version of the LLVM compiler with support for SYCL, Intel's
+extensions, and Codeplay's CUDA backend is available on GitHub at
+https://github.com/intel/llvm/ .
+See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/SYCL/)
+on the Patatrack Wiki for building the SYCL toolchain.
+
+The test program should run on any available SYCL device, and can select it at
+runtime based on the command line options.
 
 ## How to add a new implementation?
 
