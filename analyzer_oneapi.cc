@@ -41,12 +41,12 @@ namespace oneapi {
       output = Output{};
 
 #if __SYCL_COMPILER_VERSION <= 20200118
-      auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), device, queue.get_context());
+      auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), queue.get_device(), queue.get_context());
 #else
       auto input_d = (Input *)cl::sycl::malloc_device(sizeof(Input), queue);
 #endif
       if (input_d == nullptr) {
-        std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of device memory" << std::endl;
+        std::cerr << "oneAPI runtime failed to allocate " << sizeof(Input) << " bytes of device memory" << std::endl;
         exit(1);
       }
 #if __SYCL_COMPILER_VERSION <= 20200118
@@ -55,18 +55,18 @@ namespace oneapi {
       auto input_h = (Input *)cl::sycl::malloc_host(sizeof(Input), queue);
 #endif
       if (input_h == nullptr) {
-        std::cerr << "oneAPI failed to allocate " << sizeof(Input) << " bytes of host memory" << std::endl;
+        std::cerr << "oneAPI runtime failed to allocate " << sizeof(Input) << " bytes of host memory" << std::endl;
         exit(1);
       }
       std::memcpy(input_h, &input, sizeof(Input));
 
 #if __SYCL_COMPILER_VERSION <= 20200118
-      auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), device, queue.get_context());
+      auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), queue.get_device(), queue.get_context());
 #else
       auto output_d = (Output *)cl::sycl::malloc_device(sizeof(Output), queue);
 #endif
       if (output_d == nullptr) {
-        std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of device memory" << std::endl;
+        std::cerr << "oneAPI runtime failed to allocate " << sizeof(Output) << " bytes of device memory" << std::endl;
         exit(1);
       }
 #if __SYCL_COMPILER_VERSION <= 20200118
@@ -75,7 +75,7 @@ namespace oneapi {
       auto output_h = (Output *)cl::sycl::malloc_host(sizeof(Output), queue);
 #endif
       if (output_h == nullptr) {
-        std::cerr << "oneAPI failed to allocate " << sizeof(Output) << " bytes of host memory" << std::endl;
+        std::cerr << "oneAPI runtime failed to allocate " << sizeof(Output) << " bytes of host memory" << std::endl;
         exit(1);
       }
       output_h->err.construct(pixelgpudetails::MAX_FED_WORDS, output_d->err_d);

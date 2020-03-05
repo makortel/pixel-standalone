@@ -10,16 +10,29 @@
 #include "output.h"
 #include "rawtodigi_oneapi.h"
 
-// experimental printf support
-
+// For host compilation use the standard implementation.
 #ifdef __SYCL_DEVICE_ONLY__
-// according to OpenCL C spec, the printf format string must be in constant address space
+
+#ifdef __SYCL_NVPTX__
+
+// Not yet supported by the CUDA backend
+#define printf(FORMAT, ...)                                               \
+  do {                                                                    \
+  } while (false)
+
+#else
+// Experimental printf support for Intel SYCL/OpenCL backend
+// According to OpenCL C spec, the printf format string must be in constant address space
 #define printf(FORMAT, ...)                                               \
   do {                                                                    \
     static const __attribute__((opencl_constant)) char format[] = FORMAT; \
     cl::sycl::intel::experimental::printf(format, ##__VA_ARGS__);         \
   } while (false)
-#endif
+
+#endif  // __SYCL_NVPTX__
+
+#endif  // __SYCL_DEVICE_ONLY__
+
 
 namespace oneapi {
 

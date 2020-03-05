@@ -24,7 +24,7 @@ TBB_BASE    :=
 CUDA_BASE   := /usr/local/cuda
 ALPAKA_BASE := /usr/local/alpaka/alpaka
 CUPLA_BASE  := /usr/local/alpaka/cupla
-ONEAPI_BASE := /opt/intel/inteloneapi/compiler/latest/linux
+ONEAPI_BASE := /opt/sycl/latest
 DPCT_BASE   := /opt/intel/inteloneapi/dpcpp-ct/latest
 
 # host compiler
@@ -92,10 +92,14 @@ endif
 endif
 ifdef ONEAPI_BASE
 ONEAPI_CXX   := $(ONEAPI_BASE)/bin/clang++
-ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include -Wno-unknown-cuda-version
+ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+HAVE_LLVM_11 := $(wildcard $(ONEAPI_BASE)/bin/clang-11)
+ifdef HAVE_LLVM_11
+ONEAPI_FLAGS := $(ONEAPI_FLAGS) -Wno-unknown-cuda-version
+endif
 ifdef CUDA_BASE
-ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_BASE)/lib64/libpi_cuda.so)
-ONEAPI_CUDA_FLAGS  := -fsycl-targets=nvptx64-nvidia-cuda-sycldevice --cuda-path=$(CUDA_BASE)
+ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_LIBDIR)/libpi_cuda.so)
+ONEAPI_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE)
 endif
 endif
 
@@ -136,6 +140,9 @@ environment: env.sh
 
 env.sh: Makefile
 	@echo '#! /bin/bash' > $@
+ifdef ONEAPI_LIBDIR
+	@echo 'export PATH=$(ONEAPI_BASE)/bin:$$PATH' >> $@
+endif
 	@echo -n 'export LD_LIBRARY_PATH=' >> $@
 ifdef TBB_LIBDIR
 	@echo -n '$(TBB_LIBDIR):' >> $@
@@ -643,25 +650,31 @@ kokkos-debug:
 endif
 
 ifdef ONEAPI_BASE
-oneapi: test-oneapi test-oneapi-cuda
-	@echo -e $(GREEN)oneAPI targets built$(RESET)
+oneapi: test-oneapi test-oneapi-opencl test-oneapi-cuda
+	@echo -e $(GREEN)Intel oneAPI targets built$(RESET)
 
-oneapi-debug: debug-oneapi debug-oneapi-cuda
-	@echo -e $(GREEN)oneAPI debug targets built$(RESET)
+oneapi-debug: debug-oneapi debug-oneapi-opencl debug-oneapi-cuda
+	@echo -e $(GREEN)Intel oneAPI debug targets built$(RESET)
 
-# oneAPI implementation
-test-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+# Intel oneAPI implementation
+test-oneapi-opencl: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=spir64-*-*-sycldevice $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
-debug-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+debug-oneapi-opencl: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=spir64-*-*-sycldevice $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
 ifdef ONEAPI_CUDA_PLUGIN
 test-oneapi-cuda: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=nvptx64-*-*-sycldevice $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
 debug-oneapi-cuda: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
-	$(ONEAPI_CXX) $(ONEAPI_FLAGS) $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=nvptx64-*-*-sycldevice $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+
+test-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=nvptx64-*-*-sycldevice,spir64-*-*-sycldevice $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+
+debug-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=nvptx64-*-*-sycldevice,spir64-*-*-sycldevice $(ONEAPI_CUDA_FLAGS) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
 
 else
 test-oneapi-cuda:
@@ -670,13 +683,19 @@ test-oneapi-cuda:
 debug-oneapi-cuda:
 	@echo -e $(YELLOW)NVIDIA CUDA support not found$(RESET), oneAPI debug targets using CUDA will not be built
 
+test-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=spir64-*-*-sycldevice $(CXX_FLAGS) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+
+debug-oneapi: main_oneapi.cc analyzer_oneapi.cc analyzer_oneapi.h rawtodigi_oneapi.cc rawtodigi_oneapi.h
+	$(ONEAPI_CXX) $(ONEAPI_FLAGS) -fsycl-targets=spir64-*-*-sycldevice $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ONEAPI -o $@ main_oneapi.cc analyzer_oneapi.cc rawtodigi_oneapi.cc
+
 endif
 
 else
 oneapi:
-	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI toolchain not found$(RESET), oneAPI targets will not be built
 
 oneapi-debug:
-	@echo -e $(YELLOW)Intel oneAPI not found$(RESET), oneAPI debug targets will not be built
+	@echo -e $(YELLOW)Intel oneAPI toolchain not found$(RESET), oneAPI debug targets will not be built
 
 endif
