@@ -2,12 +2,9 @@
 #include <memory>
 
 #include "input.h"
+#include "loops.h"
 #include "output.h"
 #include "rawtodigi_naive.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 namespace naive {
   void analyze(Input const& input, std::unique_ptr<Output>& output, double& totaltime) {

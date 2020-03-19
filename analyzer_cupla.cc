@@ -12,13 +12,10 @@
 
 #include "cupla_check.h"
 #include "input.h"
+#include "loops.h"
 #include "modules.h"
 #include "output.h"
 #include "rawtodigi_cupla.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 namespace CUPLA_ACCELERATOR_NAMESPACE {
 

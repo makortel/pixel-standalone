@@ -6,13 +6,10 @@
 #include <CL/sycl.hpp>
 
 #include "input.h"
+#include "loops.h"
 #include "modules.h"
 #include "output.h"
 #include "rawtodigi_oneapi.h"
-
-namespace {
-  constexpr int NLOOPS = 100;
-}
 
 namespace oneapi {
 
