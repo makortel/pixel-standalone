@@ -4,10 +4,14 @@
 class Input;
 class Output;
 
-namespace kokkos {
-  void initialize(int& argc, char** argv);
+namespace kokkos_serial {
   void analyze(Input const& input, Output& output, double& totaltime);
-  void finalize();
+}  // namespace kokkos
+namespace kokkos_openmp {
+  void analyze(Input const& input, Output& output, double& totaltime);
+}  // namespace kokkos
+namespace kokkos_cuda {
+  void analyze(Input const& input, Output& output, double& totaltime);
 }  // namespace kokkos
 
 #endif

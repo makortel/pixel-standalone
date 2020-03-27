@@ -2,21 +2,12 @@
 
 #include "analyzer_kokkos.h"
 #include "input.h"
+#include "kokkosConfig.h"
 #include "loops.h"
 #include "output.h"
 #include "rawtodigi_kokkos.h"
 
-#ifdef DIGI_KOKKOS_SERIAL
-using KokkosExecSpace = Kokkos::Serial;
-#elif defined DIGI_KOKKOS_OPENMP
-using KokkosExecSpace = Kokkos::OpenMP;
-#elif defined DIGI_KOKKOS_CUDA
-using KokkosExecSpace = Kokkos::Cuda;
-#endif
-
-namespace kokkos {
-  void initialize(int& argc, char** argv) { Kokkos::initialize(argc, argv); }
-
+namespace KOKKOS_NAMESPACE {
   void analyze(Input const& input, Output& output, double& totaltime) {
     totaltime = 0.;
 
@@ -42,7 +33,7 @@ namespace kokkos {
 
       Kokkos::parallel_for(
           Kokkos::RangePolicy<KokkosExecSpace>(0, input.wordCounter), KOKKOS_LAMBDA(const size_t i) {
-            kokkos::rawtodigi(input_d.data(), output_d.data(), wordCounter, true, true, false, i);
+            rawtodigi(input_d.data(), output_d.data(), wordCounter, true, true, false, i);
           });
       Kokkos::fence();  // I don't know if parallel_for is synchronous or not
       Kokkos::deep_copy(output_h, output_d);
@@ -63,6 +54,4 @@ namespace kokkos {
 
     totaltime /= NLOOPS;
   }
-
-  void finalize() { Kokkos::finalize(); }
 }  // namespace kokkos

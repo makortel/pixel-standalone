@@ -3,11 +3,12 @@
 #include <Kokkos_Core.hpp>
 
 #include "input.h"
+#include "kokkosConfig.h"
 #include "output.h"
 #include "pixelgpudetails.h"
 #include "rawtodigi_kokkos.h"
 
-namespace kokkos {
+namespace KOKKOS_NAMESPACE {
   class Packing {
   public:
     using PackedDigiType = uint32_t;
