@@ -3,10 +3,12 @@
 
 #include <Kokkos_Macros.hpp>
 
+#include "kokkosConfig.h"
+
 class Input;
 class Output;
 
-namespace kokkos {
+namespace KOKKOS_NAMESPACE {
   KOKKOS_FUNCTION void rawtodigi(const Input* input,
                                  Output* output,
                                  const uint32_t wordCounter,
