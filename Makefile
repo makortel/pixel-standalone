@@ -119,10 +119,12 @@ ifdef KOKKOS_BASE
   ifneq ($(wildcard $(CUDA_BASE)),)
     KOKKOS_DEVICES := "$(KOKKOS_DEVICES),Cuda"
     KOKKOS_ARCH := "$(KOKKOS_ARC),Volta70"
+    KOKKOS_CUDA_OPTIONS := enable_lambda,enable_constexpr,rdc
     CXX := $(KOKKOS_BASE)/bin/nvcc_wrapper
-    KOKKOS_CXXFLAGS += --expt-relaxed-constexpr
   endif
   include $(KOKKOS_BASE)/Makefile.kokkos
+  KOKKOS_CXXFLAGS := $(subst -expt-relaxed-constexpr,--expt-relaxed-constexpr,$(KOKKOS_CXXFLAGS))
+  KOKKOS_CXXFLAGS := $(subst -expt-extended-lambda,--expt-extended-lambda,$(KOKKOS_CXXFLAGS))
 endif
 
 # color highlights for ANSI terminals
@@ -630,13 +632,13 @@ test-kokkos-openmp:  $(BUILD)/main_kokkos.omp.o $(BUILD)/analyzer_kokkos.omp.o $
 
 # Kokkos implementation, CUDA backend
 $(BUILD)/rawtodigi_kokkos.cuda.o: rawtodigi_kokkos.cc rawtodigi_kokkos.h pixelgpudetails.h input.h output.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/analyzer_kokkos.cuda.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkos.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkos.cuda.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ -c $<
+	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -o $@ -c $<
 
 test-kokkos-cuda:  $(BUILD)/main_kokkos.cuda.o $(BUILD)/analyzer_kokkos.cuda.o $(BUILD)/rawtodigi_kokkos.cuda.o | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
