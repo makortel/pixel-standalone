@@ -52,7 +52,7 @@ an NVIDIA GPU.
 By deafult, the binaries target SM 3.5, 5.0,  6.0 and 7.0. Different targets can
 be added in the `Makefile`.
 
-### Alpaka [release 0.4.0](https://github.com/ComputationalRadiationPhysics/alpaka/tree/0.4.0)
+### Alpaka [release 0.4.0](https://github.com/alpaka-group/alpaka/tree/0.4.0)
 
 The Alpaka test program can be compiled for different backends; so far it has been
 tested with the CUDA, serial, and TBB backends.
@@ -65,7 +65,7 @@ symbols. The `test-alpaka` binary tries to exercise all available backends.
 See [the instructions](https://patatrack.web.cern.ch/patatrack/wiki/AlpakaAndCupla/)
 on the Patatrack Wiki for installing Alpaka and Cupla.
 
-### Cupla [release 0.2.0](https://github.com/ComputationalRadiationPhysics/cupla/tree/0.2.0)
+### Cupla [release 0.2.0](https://github.com/alpaka-group/cupla/tree/0.2.0)
 
 The Cupla test program can be compiled for different backends; so far it has been
 tested with the CUDA, serial, TBB and OpenMP backends.
