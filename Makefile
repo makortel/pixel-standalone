@@ -118,7 +118,7 @@ ifdef KOKKOS_BASE
   CXX_ORIG := $(CXX)
   ifneq ($(wildcard $(CUDA_BASE)),)
     KOKKOS_DEVICES := "$(KOKKOS_DEVICES),Cuda"
-    KOKKOS_ARCH := "$(KOKKOS_ARC),Volta70"
+    KOKKOS_ARCH := "$(KOKKOS_ARCH),Volta70"
     KOKKOS_CUDA_OPTIONS := enable_lambda,enable_constexpr,rdc
     HAS_CUDA := 1
     CXX := $(KOKKOS_BASE)/bin/nvcc_wrapper
