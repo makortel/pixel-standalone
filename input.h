@@ -5,12 +5,26 @@
 
 #include "pixelgpudetails.h"
 
+#ifdef DIGI_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 struct alignas(128) Input {
   SiPixelFedCablingMapGPU cablingMap;
   unsigned int word[pixelgpudetails::MAX_FED_WORDS];
   unsigned char fedId[pixelgpudetails::MAX_FED_WORDS];
   unsigned int wordCounter;
 };
+
+#ifdef DIGI_KOKKOS
+template <typename MemorySpace>
+struct KokkosInput {
+  KokkosSiPixelFedCablingMap<MemorySpace> cablingMap;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_FED_WORDS], MemorySpace> word;
+  Kokkos::View<unsigned char [pixelgpudetails::MAX_FED_WORDS], MemorySpace> fedId;
+  Kokkos::View<unsigned int [1], MemorySpace> wordCounter;
+};
+#endif
 
 inline Input read_input() {
   Input ret;

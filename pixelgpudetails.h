@@ -3,6 +3,10 @@
 
 #include <cstdint>
 
+#ifdef DIGI_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
   // Update the number FED based on maximum fed found in the cabling map
@@ -89,6 +93,20 @@ struct alignas(128) SiPixelFedCablingMapGPU {
   unsigned char badRocs[pixelgpudetails::MAX_SIZE];
   unsigned int size = 0;
 };
+
+#ifdef DIGI_KOKKOS
+template <typename MemorySpace>
+struct KokkosSiPixelFedCablingMap {
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> fed;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> link;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> roc;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> RawId;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> rocInDet;
+  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> moduleId;
+  Kokkos::View<unsigned char [pixelgpudetails::MAX_SIZE], MemorySpace> badRocs;
+  Kokkos::View<unsigned int [1], MemorySpace> size = 0;
+};
+#endif
 
 struct PixelErrorCompact {
   uint32_t rawId;
