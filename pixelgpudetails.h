@@ -96,7 +96,7 @@ struct alignas(128) SiPixelFedCablingMapGPU {
 
 #ifdef DIGI_KOKKOS
 template <typename MemorySpace>
-struct KokkosSiPixelFedCablingMap {
+struct SiPixelFedCablingMapKokkosDevice {
   Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> fed;
   Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> link;
   Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> roc;
@@ -104,7 +104,19 @@ struct KokkosSiPixelFedCablingMap {
   Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> rocInDet;
   Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> moduleId;
   Kokkos::View<unsigned char [pixelgpudetails::MAX_SIZE], MemorySpace> badRocs;
-  Kokkos::View<unsigned int [1], MemorySpace> size = 0;
+  Kokkos::View<unsigned int [1], MemorySpace> size;
+};
+
+template <typename MemorySpace>
+struct SiPixelFedCablingMapKokkosHost {
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror fed;
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror link;
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror roc;
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror RawId;
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror rocInDet;
+  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror moduleId;
+  typename Kokkos::View<unsigned char [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror badRocs;
+  typename Kokkos::View<unsigned int [1], MemorySpace>::HostMirror size;
 };
 #endif
 

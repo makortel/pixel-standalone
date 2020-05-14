@@ -39,9 +39,10 @@ int main(int argc, char **argv) {
     kokkos_common::initialize(arguments);
   }
  
+  InputKokkos<KokkosMemSpace> input;
+  input.ReadInput();
 
-  KokkosInput<KokkosMemSpace> input = read_input();
-  std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
+  std::cout << "Got " << input.GetHostCablingMapSize() << " for cabling, wordCounter " << input.GetHostWordCounter() << std::endl;
 
   std::unique_ptr<Output> output;
   double totaltime = 0;
@@ -50,8 +51,8 @@ int main(int argc, char **argv) {
   totaltime = 0;
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the serial CPU backend..." << std::endl;
-  kokkos_serial::analyze(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+  kokkos_serial::analyze<KokkosMemSpace>(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 
@@ -60,7 +61,7 @@ int main(int argc, char **argv) {
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the OpenMP backend..." << std::endl;
   kokkos_openmp::analyze(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the CUDA backend..." << std::endl;
   kokkos_cuda::analyze(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
+  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 
