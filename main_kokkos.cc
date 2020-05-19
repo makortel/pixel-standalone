@@ -11,16 +11,15 @@
 
 namespace {
   void print_help(std::string const& name) {
-    std::cout
-        << name << ": [--numberOfThreads NT]"
-        << "\n\n"
-        << "Options\n"
-        << " --numberOfThreads   Number of threads to use (default -1 for all cores(?)1)\n"
-        << std::endl;
+    std::cout << name << ": [--numberOfThreads NT]"
+              << "\n\n"
+              << "Options\n"
+              << " --numberOfThreads   Number of threads to use (default -1 for all cores(?)1)\n"
+              << std::endl;
   }
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = -1;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
@@ -38,11 +37,9 @@ int main(int argc, char **argv) {
     arguments.num_threads = numberOfThreads;
     kokkos_common::initialize(arguments);
   }
- 
-  InputKokkos<KokkosMemSpace> input;
-  input.ReadInput();
 
-  std::cout << "Got " << input.GetHostCablingMapSize() << " for cabling, wordCounter " << input.GetHostWordCounter() << std::endl;
+  Input input = read_input();
+  std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;
 
   std::unique_ptr<Output> output;
   double totaltime = 0;
@@ -51,8 +48,8 @@ int main(int argc, char **argv) {
   totaltime = 0;
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the serial CPU backend..." << std::endl;
-  kokkos_serial::analyze<KokkosMemSpace>(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
+  kokkos_serial::analyze(input, *output, totaltime);
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 
@@ -61,7 +58,7 @@ int main(int argc, char **argv) {
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the OpenMP backend..." << std::endl;
   kokkos_openmp::analyze(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 
@@ -70,7 +67,7 @@ int main(int argc, char **argv) {
   output = std::make_unique<Output>();
   std::cout << "\nRunning with the CUDA backend..." << std::endl;
   kokkos_cuda::analyze(input, *output, totaltime);
-  std::cout << "Output: " << countModules(output->moduleInd, input.GetHostWordCounter()) << " modules in " << totaltime << " us"
+  std::cout << "Output: " << countModules(output->moduleInd, input.wordCounter) << " modules in " << totaltime << " us"
             << std::endl;
 #endif
 

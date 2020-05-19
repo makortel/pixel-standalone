@@ -97,26 +97,26 @@ struct alignas(128) SiPixelFedCablingMapGPU {
 #ifdef DIGI_KOKKOS
 template <typename MemorySpace>
 struct SiPixelFedCablingMapKokkosDevice {
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> fed;
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> link;
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> roc;
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> RawId;
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> rocInDet;
-  Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace> moduleId;
-  Kokkos::View<unsigned char [pixelgpudetails::MAX_SIZE], MemorySpace> badRocs;
-  Kokkos::View<unsigned int [1], MemorySpace> size;
+  Kokkos::View<unsigned int*, MemorySpace> fed;
+  Kokkos::View<unsigned int*, MemorySpace> link;
+  Kokkos::View<unsigned int*, MemorySpace> roc;
+  Kokkos::View<unsigned int*, MemorySpace> RawId;
+  Kokkos::View<unsigned int*, MemorySpace> rocInDet;
+  Kokkos::View<unsigned int*, MemorySpace> moduleId;
+  Kokkos::View<unsigned char*, MemorySpace> badRocs;
+  Kokkos::View<unsigned int*, MemorySpace> size;
 };
 
 template <typename MemorySpace>
 struct SiPixelFedCablingMapKokkosHost {
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror fed;
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror link;
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror roc;
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror RawId;
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror rocInDet;
-  typename Kokkos::View<unsigned int [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror moduleId;
-  typename Kokkos::View<unsigned char [pixelgpudetails::MAX_SIZE], MemorySpace>::HostMirror badRocs;
-  typename Kokkos::View<unsigned int [1], MemorySpace>::HostMirror size;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror fed;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror link;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror roc;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror RawId;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror rocInDet;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror moduleId;
+  typename Kokkos::View<unsigned char*, MemorySpace>::HostMirror badRocs;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror size;
 };
 #endif
 
