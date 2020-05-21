@@ -94,7 +94,7 @@ struct alignas(128) SiPixelFedCablingMapGPU {
   unsigned int size = 0;
 };
 
-#ifdef DIGI_KOKKOS
+#ifdef DIGI_KOKKOSVIEW
 template <typename MemorySpace>
 struct SiPixelFedCablingMapKokkosDevice {
   Kokkos::View<unsigned int*, MemorySpace> fed;

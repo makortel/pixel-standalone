@@ -1,14 +1,13 @@
-#include <vector>
+#ifndef rawtodigi_kokkos_h_
+#define rawtodigi_kokkos_h_
 
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 
-#include "input.h"
 #include "kokkosConfig.h"
+#include "input.h"
 #include "output.h"
-#include "pixelgpudetails.h"
-#include "rawtodigi_kokkos.h"
 
-namespace KOKKOS_NAMESPACE {
+namespace kokkos_serial {
   class Packing {
   public:
     using PackedDigiType = uint32_t;
@@ -64,16 +63,19 @@ namespace KOKKOS_NAMESPACE {
   }
 
   KOKKOS_INLINE_FUNCTION
+  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+
+  KOKKOS_INLINE_FUNCTION
   uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
   KOKKOS_INLINE_FUNCTION
   uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
   KOKKOS_INLINE_FUNCTION
-  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
   KOKKOS_INLINE_FUNCTION
-  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
   KOKKOS_INLINE_FUNCTION
   bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
@@ -85,18 +87,37 @@ namespace KOKKOS_NAMESPACE {
   }
 
   KOKKOS_INLINE_FUNCTION
-  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+    // debug = true;
 
-  KOKKOS_INLINE_FUNCTION
-  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU* cablingMap,
-                                     uint8_t fed,
-                                     uint32_t link,
-                                     uint32_t roc) {
-    uint32_t index =
-        fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
-    pixelgpudetails::DetIdGPU detId = {
-        cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index]};
-    return detId;
+    if (debug) {
+      switch (status) {
+        case (1): {
+          printf("Error in Fed: %i, invalid channel Id (errorType = 35\n)", fedId);
+          break;
+        }
+        case (2): {
+          printf("Error in Fed: %i, invalid ROC Id (errorType = 36)\n", fedId);
+          break;
+        }
+        case (3): {
+          printf("Error in Fed: %i, invalid dcol/pixel value (errorType = 37)\n", fedId);
+          break;
+        }
+        case (4): {
+          printf("Error in Fed: %i, dcol/pixel read out of order (errorType = 38)\n", fedId);
+          break;
+        }
+        default:
+          if (debug)
+            printf("Cabling check returned unexpected result, status = %i\n", status);
+      };
+    }
+
+    if (status >= 1 and status <= 4) {
+      return status + 34;
+    }
+    return 0;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -168,46 +189,21 @@ namespace KOKKOS_NAMESPACE {
     return global;
   }
 
-  KOKKOS_INLINE_FUNCTION
-  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
-    // debug = true;
-
-    if (debug) {
-      switch (status) {
-        case (1): {
-          printf("Error in Fed: %i, invalid channel Id (errorType = 35\n)", fedId);
-          break;
-        }
-        case (2): {
-          printf("Error in Fed: %i, invalid ROC Id (errorType = 36)\n", fedId);
-          break;
-        }
-        case (3): {
-          printf("Error in Fed: %i, invalid dcol/pixel value (errorType = 37)\n", fedId);
-          break;
-        }
-        case (4): {
-          printf("Error in Fed: %i, dcol/pixel read out of order (errorType = 38)\n", fedId);
-          break;
-        }
-        default:
-          if (debug)
-            printf("Cabling check returned unexpected result, status = %i\n", status);
-      };
-    }
-
-    if (status >= 1 and status <= 4) {
-      return status + 34;
-    }
-    return 0;
+  template <typename MemorySpace>
+  KOKKOS_INLINE_FUNCTION pixelgpudetails::DetIdGPU getRawId(
+      const SiPixelFedCablingMapKokkosDevice<MemorySpace>& cablingMap, uint8_t fed, uint32_t link, uint32_t roc) {
+    uint32_t index =
+        fed * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
+    pixelgpudetails::DetIdGPU detId = {cablingMap.RawId(index), cablingMap.rocInDet(index), cablingMap.moduleId(index)};
+    return detId;
   }
 
-  KOKKOS_INLINE_FUNCTION
-  uint32_t getErrRawID(uint8_t fedId,
-                       uint32_t errWord,
-                       uint32_t errorType,
-                       const SiPixelFedCablingMapGPU* cablingMap,
-                       bool debug = false) {
+  template <typename MemorySpace>
+  KOKKOS_INLINE_FUNCTION uint32_t getErrRawID(uint8_t fedId,
+                                              uint32_t errWord,
+                                              uint32_t errorType,
+                                              const SiPixelFedCablingMapKokkosDevice<MemorySpace>& cablingMap,
+                                              bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -280,9 +276,12 @@ namespace KOKKOS_NAMESPACE {
     return rID;
   }
 
-  KOKKOS_INLINE_FUNCTION
-  uint8_t checkROC(
-      uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU* cablingMap, bool debug = false) {
+  template <typename MemorySpace>
+  KOKKOS_INLINE_FUNCTION uint8_t checkROC(uint32_t errorWord,
+                                          uint8_t fedId,
+                                          uint32_t link,
+                                          const SiPixelFedCablingMapKokkosDevice<MemorySpace>& cablingMap,
+                                          bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
       return 0;
@@ -293,8 +292,8 @@ namespace KOKKOS_NAMESPACE {
         errorFound = true;
         uint32_t index =
             fedId * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + 1;
-        if (index > 1 && index <= cablingMap->size) {
-          if (!(link == cablingMap->link[index] && 1 == cablingMap->roc[index]))
+        if (index > 1 && index <= cablingMap.size(0)) {
+          if (!(link == cablingMap.link(index) && 1 == cablingMap.roc(index)))
             errorFound = false;
         }
         if (debug and errorFound)
@@ -358,16 +357,14 @@ namespace KOKKOS_NAMESPACE {
     return errorFound ? errorType : 0;
   }
 
-  KOKKOS_FUNCTION void rawtodigi(const Input* input,
+  template <typename MemorySpace>
+  KOKKOS_FUNCTION void rawtodigi(const InputKokkosDevice<MemorySpace>& input,
                                  Output* output,
                                  const uint32_t wordCounter,
                                  bool useQualityInfo,
                                  bool includeErrors,
                                  bool debug,
                                  const int32_t index) {
-    const SiPixelFedCablingMapGPU* cablingMap = &input->cablingMap;
-    const uint32_t* word = input->word;
-    const uint8_t* fedIds = input->fedId;
     uint16_t* xx = output->xx;
     uint16_t* yy = output->yy;
     uint16_t* adc = output->adc;
@@ -384,14 +381,18 @@ namespace KOKKOS_NAMESPACE {
       adc[gIndex] = 0;
       bool skipROC = false;
 
-      uint8_t fedId = fedIds[gIndex / 2];  // +1200;
+      auto fedIds = input.getFedId();
+      uint8_t fedId = fedIds(gIndex / 2);  // +1200;
 
       // initialize (too many coninue below)
       pdigi[gIndex] = 0;
       rawIdArr[gIndex] = 0;
       moduleId[gIndex] = 9999;
 
-      uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
+      auto cablingMap_d = input.getCablingMap();
+
+      auto words = input.getWord();
+      uint32_t ww = words(gIndex);  // Array containing 32 bit raw data
       if (ww == 0) {
         // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
         continue;
@@ -399,12 +400,12 @@ namespace KOKKOS_NAMESPACE {
 
       uint32_t link = getLink(ww);  // Extract link
       uint32_t roc = getRoc(ww);    // Extract Roc in link
-      pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
+      pixelgpudetails::DetIdGPU detId = getRawId(cablingMap_d, fedId, link, roc);
 
-      uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
+      uint8_t errorType = checkROC(ww, fedId, link, cablingMap_d, debug);
       skipROC = (roc < pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
       if (includeErrors and skipROC) {
-        uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
+        uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap_d, debug);
         err->push_back(PixelErrorCompact{rID, ww, errorType, fedId});
         continue;
       }
@@ -416,7 +417,7 @@ namespace KOKKOS_NAMESPACE {
       uint32_t index =
           fedId * pixelgpudetails::MAX_LINK * pixelgpudetails::MAX_ROC + (link - 1) * pixelgpudetails::MAX_ROC + roc;
       if (useQualityInfo) {
-        skipROC = cablingMap->badRocs[index];
+        skipROC = cablingMap_d.badRocs(index);
         if (skipROC)
           continue;
       }
@@ -480,5 +481,14 @@ namespace KOKKOS_NAMESPACE {
     }  // end of loop (gIndex < end)
 
   }  // end of Raw to Digi kernel
+}  // namespace kokkos_serial
 
-}  // namespace KOKKOS_NAMESPACE
+namespace kokkos_openmp {
+  using namespace kokkos_serial;
+}  // namespace kokkos_openmp
+
+namespace kokkos_cuda {
+  using namespace kokkos_serial;
+}  // namespace kokkos_cuda
+
+#endif  // rawtodigi_kokkos_h_

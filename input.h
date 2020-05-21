@@ -6,7 +6,7 @@
 
 #include "pixelgpudetails.h"
 
-#ifdef DIGI_KOKKOS
+#ifdef DIGI_KOKKOSVIEW
 #include <Kokkos_Core.hpp>
 #endif
 
@@ -29,162 +29,116 @@ inline Input read_input() {
   return ret;
 }
 
-#ifdef DIGI_KOKKOS
+#ifdef DIGI_KOKKOSVIEW
 template <typename MemorySpace>
-struct InputKokkosDevice {
+class InputKokkosDevice {
+public:
+  InputKokkosDevice() {
+    cablingMap.fed = Kokkos::View<unsigned int*, MemorySpace>("fed", pixelgpudetails::MAX_SIZE);
+    cablingMap.link = Kokkos::View<unsigned int*, MemorySpace>("link", pixelgpudetails::MAX_SIZE);
+    cablingMap.roc = Kokkos::View<unsigned int*, MemorySpace>("roc", pixelgpudetails::MAX_SIZE);
+    cablingMap.RawId = Kokkos::View<unsigned int*, MemorySpace>("RawId", pixelgpudetails::MAX_SIZE);
+    cablingMap.rocInDet = Kokkos::View<unsigned int*, MemorySpace>("rocInDet", pixelgpudetails::MAX_SIZE);
+    cablingMap.moduleId = Kokkos::View<unsigned int*, MemorySpace>("moduleId", pixelgpudetails::MAX_SIZE);
+    cablingMap.badRocs = Kokkos::View<unsigned char*, MemorySpace>("badRocs", pixelgpudetails::MAX_SIZE);
+    cablingMap.size = Kokkos::View<unsigned int*, MemorySpace>("size", 1);
+
+    fedId = Kokkos::View<unsigned char*, MemorySpace>("fedId", pixelgpudetails::MAX_FED_WORDS);
+    word = Kokkos::View<unsigned int*, MemorySpace>("word", pixelgpudetails::MAX_FED_WORDS);
+    wordCounter = Kokkos::View<unsigned int*, MemorySpace>("wordCounter", 1);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  const SiPixelFedCablingMapKokkosDevice<MemorySpace>& getCablingMap() const { return this->cablingMap; }
+  KOKKOS_INLINE_FUNCTION
+  const Kokkos::View<unsigned char*, MemorySpace>& getFedId() const { return this->fedId; }
+  KOKKOS_INLINE_FUNCTION
+  const Kokkos::View<unsigned int*, MemorySpace>& getWord() const { return this->word; }
+  KOKKOS_INLINE_FUNCTION
+  const Kokkos::View<unsigned int*, MemorySpace>& getWordCounter() const { return this->wordCounter; }
+
+private:
+private:
   SiPixelFedCablingMapKokkosDevice<MemorySpace> cablingMap;
-  Kokkos::View<unsigned int*, MemorySpace> word;
   Kokkos::View<unsigned char*, MemorySpace> fedId;
+  Kokkos::View<unsigned int*, MemorySpace> word;
   Kokkos::View<unsigned int*, MemorySpace> wordCounter;
 };
 
 template <typename MemorySpace>
-struct InputKokkosHost {
+class InputKokkosHost {
+public:
+  InputKokkosHost() = delete;
+  ~InputKokkosHost() = default;
+  InputKokkosHost(InputKokkosDevice<MemorySpace>& input_d) : input_d{input_d} {
+    auto cablingMap_d = input_d.getCablingMap();
+    auto word_d = input_d.getWord();
+    auto fedId_d = input_d.getFedId();
+    auto wordCounter_d = input_d.getWordCounter();
+
+    // Initialize host mirror based on device view
+    this->cablingMap.fed = Kokkos::create_mirror_view(cablingMap_d.fed);
+    this->cablingMap.link = Kokkos::create_mirror_view(cablingMap_d.link);
+    this->cablingMap.roc = Kokkos::create_mirror_view(cablingMap_d.roc);
+    this->cablingMap.RawId = Kokkos::create_mirror_view(cablingMap_d.RawId);
+    this->cablingMap.rocInDet = Kokkos::create_mirror_view(cablingMap_d.rocInDet);
+    this->cablingMap.moduleId = Kokkos::create_mirror_view(cablingMap_d.moduleId);
+    this->cablingMap.badRocs = Kokkos::create_mirror_view(cablingMap_d.badRocs);
+    this->cablingMap.size = Kokkos::create_mirror_view(cablingMap_d.size);
+
+    this->word = Kokkos::create_mirror_view(word_d);
+    this->fedId = Kokkos::create_mirror_view(fedId_d);
+    this->wordCounter = Kokkos::create_mirror_view(wordCounter_d);
+  }
+
+  void readInput(const Input& raw_input) {
+    // Loops are required since View is not guaranteed to have contiguous memory access
+    for (int i = 0; i < pixelgpudetails::MAX_SIZE; i++) {
+      cablingMap.fed(i) = raw_input.cablingMap.fed[i];
+      cablingMap.link(i) = raw_input.cablingMap.link[i];
+      cablingMap.roc(i) = raw_input.cablingMap.roc[i];
+      cablingMap.RawId(i) = raw_input.cablingMap.RawId[i];
+      cablingMap.rocInDet(i) = raw_input.cablingMap.rocInDet[i];
+      cablingMap.moduleId(i) = raw_input.cablingMap.moduleId[i];
+      cablingMap.badRocs(i) = raw_input.cablingMap.badRocs[i];
+    }
+    cablingMap.size(0) = raw_input.cablingMap.size;
+    wordCounter(0) = raw_input.wordCounter;
+    for (int i = 0; i < wordCounter(0); i++) {
+      word(i) = raw_input.word[i];
+    }
+    for (int i = 0; i < wordCounter(0) / 2; i++) {
+      fedId(i) = raw_input.fedId[i];
+    }
+  }
+
+  void copyToDevice() {
+    auto cablingMap_d = input_d.getCablingMap();
+    auto word_d = input_d.getWord();
+    auto fedId_d = input_d.getFedId();
+    auto wordCounter_d = input_d.getWordCounter();
+
+    Kokkos::deep_copy(cablingMap_d.fed, cablingMap.fed);
+    Kokkos::deep_copy(cablingMap_d.link, cablingMap.link);
+    Kokkos::deep_copy(cablingMap_d.roc, cablingMap.roc);
+    Kokkos::deep_copy(cablingMap_d.RawId, cablingMap.RawId);
+    Kokkos::deep_copy(cablingMap_d.rocInDet, cablingMap.rocInDet);
+    Kokkos::deep_copy(cablingMap_d.moduleId, cablingMap.moduleId);
+    Kokkos::deep_copy(cablingMap_d.badRocs, cablingMap.badRocs);
+    Kokkos::deep_copy(cablingMap_d.size, cablingMap.size);
+
+    Kokkos::deep_copy(word_d, word);
+    Kokkos::deep_copy(fedId_d, fedId);
+    Kokkos::deep_copy(wordCounter_d, wordCounter);
+  }
+
+private:
+  InputKokkosDevice<MemorySpace>& input_d;
   SiPixelFedCablingMapKokkosHost<MemorySpace> cablingMap;
   typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror word;
   typename Kokkos::View<unsigned char*, MemorySpace>::HostMirror fedId;
   typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror wordCounter;
 };
-
-template <typename MemorySpace>
-class InputKokkos {
-public:
-  InputKokkos() {
-    InitDeviceView();
-    CreateHostMirror();
-  }
-
-  InputKokkos(const Input& input) : InputKokkos() {
-    for (int i = 0; i < pixelgpudetails::MAX_SIZE; i++) {
-      input_h.cablingMap.fed(i) = input.cablingMap.fed[i];
-      input_h.cablingMap.link(i) = input.cablingMap.link[i];
-      input_h.cablingMap.roc(i) = input.cablingMap.roc[i];
-      input_h.cablingMap.RawId(i) = input.cablingMap.RawId[i];
-      input_h.cablingMap.rocInDet(i) = input.cablingMap.rocInDet[i];
-      input_h.cablingMap.moduleId(i) = input.cablingMap.moduleId[i];
-      input_h.cablingMap.badRocs(i) = input.cablingMap.badRocs[i];
-    }
-
-    input_h.cablingMap.size(0) = input.cablingMap.size;
-
-    input_h.wordCounter(0) = input.wordCounter;
-
-    for (int i = 0; i < input_h.wordCounter(0); i++) {
-      input_h.word(i) = input.word[i];
-    }
-
-    for (int i = 0; i < input_h.wordCounter(0) / 2; i++) {
-      input_h.fedId(i) = input.fedId[i];
-    }
-    DeepCopyH2D();
-  }
-
-  ~InputKokkos() = default;
-
-  InputKokkos& operator=(const InputKokkos&) = delete;
-
-  void ReadInput() {
-    Input raw_input = read_input();
-
-    // Initialize host mirror based on raw data
-    // Loops are required since View is not guaranteed to have contiguous memory access
-    for (int i = 0; i < pixelgpudetails::MAX_SIZE; i++) {
-      input_h.cablingMap.fed(i) = raw_input.cablingMap.fed[i];
-      input_h.cablingMap.link(i) = raw_input.cablingMap.link[i];
-      input_h.cablingMap.roc(i) = raw_input.cablingMap.roc[i];
-      input_h.cablingMap.RawId(i) = raw_input.cablingMap.RawId[i];
-      input_h.cablingMap.rocInDet(i) = raw_input.cablingMap.rocInDet[i];
-      input_h.cablingMap.moduleId(i) = raw_input.cablingMap.moduleId[i];
-      input_h.cablingMap.badRocs(i) = raw_input.cablingMap.badRocs[i];
-    }
-
-    input_h.cablingMap.size(0) = raw_input.cablingMap.size;
-
-    input_h.wordCounter(0) = raw_input.wordCounter;
-
-    for (int i = 0; i < input_h.wordCounter(0); i++) {
-      input_h.word(i) = raw_input.word[i];
-    }
-
-    for (int i = 0; i < input_h.wordCounter(0) / 2; i++) {
-      input_h.fedId(i) = raw_input.fedId[i];
-    }
-    DeepCopyH2D();
-  }
-
-  void DeepCopyH2D() {
-    Kokkos::deep_copy(input_d.cablingMap.fed, input_h.cablingMap.fed);
-    Kokkos::deep_copy(input_d.cablingMap.link, input_h.cablingMap.link);
-    Kokkos::deep_copy(input_d.cablingMap.roc, input_h.cablingMap.roc);
-    Kokkos::deep_copy(input_d.cablingMap.RawId, input_h.cablingMap.RawId);
-    Kokkos::deep_copy(input_d.cablingMap.rocInDet, input_h.cablingMap.rocInDet);
-    Kokkos::deep_copy(input_d.cablingMap.moduleId, input_h.cablingMap.moduleId);
-    Kokkos::deep_copy(input_d.cablingMap.badRocs, input_h.cablingMap.badRocs);
-    Kokkos::deep_copy(input_d.cablingMap.size, input_h.cablingMap.size);
-
-    Kokkos::deep_copy(input_d.word, input_h.word);
-    Kokkos::deep_copy(input_d.fedId, input_h.fedId);
-    Kokkos::deep_copy(input_d.wordCounter, input_h.wordCounter);
-  }
-  void DeepCopyD2H() {
-    Kokkos::deep_copy(input_h.cablingMap.fed, input_d.cablingMap.fed);
-    Kokkos::deep_copy(input_h.cablingMap.link, input_d.cablingMap.link);
-    Kokkos::deep_copy(input_h.cablingMap.roc, input_d.cablingMap.roc);
-    Kokkos::deep_copy(input_h.cablingMap.RawId, input_d.cablingMap.RawId);
-    Kokkos::deep_copy(input_h.cablingMap.rocInDet, input_d.cablingMap.rocInDet);
-    Kokkos::deep_copy(input_h.cablingMap.moduleId, input_d.cablingMap.moduleId);
-    Kokkos::deep_copy(input_h.cablingMap.badRocs, input_d.cablingMap.badRocs);
-    Kokkos::deep_copy(input_h.cablingMap.size, input_d.cablingMap.size);
-
-    Kokkos::deep_copy(input_h.word, input_d.word);
-    Kokkos::deep_copy(input_h.fedId, input_d.fedId);
-    Kokkos::deep_copy(input_h.wordCounter, input_d.wordCounter);
-  }
-
-  unsigned int GetHostCablingMapSize() { return input_h.cablingMap.size(0); }
-  unsigned int GetHostWordCounter() { return input_h.wordCounter(0); }
-
-  KOKKOS_INLINE_FUNCTION
-  const Kokkos::View<unsigned char*, MemorySpace>& GetDeviceFedId() const { return input_d.fedId; }
-  KOKKOS_INLINE_FUNCTION
-  const Kokkos::View<unsigned int*, MemorySpace>& GetDeviceWord() const { return input_d.word; }
-  KOKKOS_INLINE_FUNCTION
-  const SiPixelFedCablingMapKokkosDevice<MemorySpace>& GetDeviceCablingMap() const { return input_d.cablingMap; }
-
-private:
-  void InitDeviceView() {
-    input_d.cablingMap.fed = Kokkos::View<unsigned int*, MemorySpace>("fed", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.link = Kokkos::View<unsigned int*, MemorySpace>("link", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.roc = Kokkos::View<unsigned int*, MemorySpace>("roc", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.RawId = Kokkos::View<unsigned int*, MemorySpace>("RawId", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.rocInDet = Kokkos::View<unsigned int*, MemorySpace>("rocInDet", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.moduleId = Kokkos::View<unsigned int*, MemorySpace>("moduleId", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.badRocs = Kokkos::View<unsigned char*, MemorySpace>("badRocs", pixelgpudetails::MAX_SIZE);
-    input_d.cablingMap.size = Kokkos::View<unsigned int*, MemorySpace>("size", 1);
-
-    input_d.word = Kokkos::View<unsigned int*, MemorySpace>("word", pixelgpudetails::MAX_FED_WORDS);
-    input_d.fedId = Kokkos::View<unsigned char*, MemorySpace>("fedId", pixelgpudetails::MAX_FED_WORDS);
-    input_d.wordCounter = Kokkos::View<unsigned int*, MemorySpace>("wordCounter", 1);
-  }
-
-  void CreateHostMirror() {
-    input_h.cablingMap.fed = Kokkos::create_mirror_view(input_d.cablingMap.fed);
-    input_h.cablingMap.link = Kokkos::create_mirror_view(input_d.cablingMap.link);
-    input_h.cablingMap.roc = Kokkos::create_mirror_view(input_d.cablingMap.roc);
-    input_h.cablingMap.RawId = Kokkos::create_mirror_view(input_d.cablingMap.RawId);
-    input_h.cablingMap.rocInDet = Kokkos::create_mirror_view(input_d.cablingMap.rocInDet);
-    input_h.cablingMap.moduleId = Kokkos::create_mirror_view(input_d.cablingMap.moduleId);
-    input_h.cablingMap.badRocs = Kokkos::create_mirror_view(input_d.cablingMap.badRocs);
-    input_h.cablingMap.size = Kokkos::create_mirror_view(input_d.cablingMap.size);
-
-    input_h.word = Kokkos::create_mirror_view(input_d.word);
-    input_h.fedId = Kokkos::create_mirror_view(input_d.fedId);
-    input_h.wordCounter = Kokkos::create_mirror_view(input_d.wordCounter);
-  }
-
-  InputKokkosHost<MemorySpace> input_h;
-  InputKokkosDevice<MemorySpace> input_d;
-};
-#endif
+#endif  // DIGI_KOKKOSVIEW
 
 #endif  // input_h_
