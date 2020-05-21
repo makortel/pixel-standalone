@@ -30,7 +30,10 @@ The test programs are divided in three units
 |  - only on GPU |                       | `test-cupla-cuda-async`         | `DIGI_CUPLA`, `CUPLA_STREAM_ASYNC_ENABLED=1`, `ALPAKA_ACC_GPU_CUDA_ENABLED`           |
 | Kokkos on CPU  | `kokkos`              | `test-kokkos-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`                                                   |
 |                |                       | `test-kokkos-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP`                                                   |
+|                |                       | `test-kokkosview-serial`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_SERIAL`, `DIGI_KOKKOSVIEW`                   |
+|                |                       | `test-kokkosview-openmp`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_OPENMP` `DIGI_KOKKOSVIEW`                   |
 | Kokkos on GPU  |                       | `test-kokkos-cuda`              | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA`                                                     |
+|                |                       | `test-kokkosview-cuda`            | `DIGI_KOKKOS`, `DIGI_KOKKOS_CUDA` `DIGI_KOKKOSVIEW`                   |
 | Intel oneAPI   | `oneapi`              | `test-oneapi`                   | `DIGI_ONEAPI`                                                                         |
 |  - OpenCL      |                       | `test-oneapi-opencl`            | `DIGI_ONEAPI`                                                                         |
 |  - CUDA        |                       | `test-oneapi-cuda`              | `DIGI_ONEAPI`                                                                         |
