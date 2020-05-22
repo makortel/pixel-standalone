@@ -58,7 +58,6 @@ public:
   const Kokkos::View<unsigned int*, MemorySpace>& getWordCounter() const { return this->wordCounter; }
 
 private:
-private:
   SiPixelFedCablingMapKokkosDevice<MemorySpace> cablingMap;
   Kokkos::View<unsigned char*, MemorySpace> fedId;
   Kokkos::View<unsigned int*, MemorySpace> word;

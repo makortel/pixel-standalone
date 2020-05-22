@@ -624,9 +624,6 @@ $(BUILD)/main_kokkos.serial.o: main_kokkos.cc analyzer_kokkos.h input.h modules.
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -o $@ -c $<
 
 # with kokkos view
-$(BUILD)/rawtodigi_kokkosview.serial.o: rawtodigi_kokkosview.cc rawtodigi_kokkosview.h pixelgpudetails.h input.h output.h kokkosConfig.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
-
 $(BUILD)/analyzer_kokkosview.serial.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkosview.h kokkosConfig.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_SERIAL -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
@@ -637,7 +634,7 @@ $(BUILD)/main_kokkosview.serial.o: main_kokkos.cc analyzer_kokkos.h input.h modu
 test-kokkos-serial: $(BUILD)/main_kokkos.serial.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkos.serial.o $(BUILD)/rawtodigi_kokkos.serial.o | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
-test-kokkosview-serial: $(BUILD)/main_kokkosview.serial.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.serial.o $(BUILD)/rawtodigi_kokkosview.serial.o | $(KOKKOS_LINK_DEPENDS)
+test-kokkosview-serial: $(BUILD)/main_kokkosview.serial.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.serial.o | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # Kokkos implementation, OpenMP backend
@@ -655,16 +652,13 @@ test-kokkos-openmp:  $(BUILD)/main_kokkos.omp.o $(BUILD)/kokkosConfig_common.o $
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # with kokkos view
-$(BUILD)/rawtodigi_kokkosview.omp.o: rawtodigi_kokkosview.cc rawtodigi_kokkosview.h pixelgpudetails.h input.h output.h kokkosConfig.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
-
 $(BUILD)/analyzer_kokkosview.omp.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkosview.h kokkosConfig.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkosview.omp.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h kokkosConfig.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_OPENMP -DDIGI_KOKKOSVIEW -o $@ -c $<
 
-test-kokkosview-openmp:  $(BUILD)/main_kokkosview.omp.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.omp.o $(BUILD)/rawtodigi_kokkosview.omp.o | $(KOKKOS_LINK_DEPENDS)
+test-kokkosview-openmp:  $(BUILD)/main_kokkosview.omp.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.omp.o | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # Kokkos implementation, CUDA backend
@@ -682,16 +676,13 @@ test-kokkos-cuda:  $(BUILD)/main_kokkos.cuda.o $(BUILD)/kokkosConfig_common.o $(
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # with kokkos view
-$(BUILD)/rawtodigi_kokkosview.cuda.o: rawtodigi_kokkosview.cc rawtodigi_kokkosview.h pixelgpudetails.h input.h output.h kokkosConfig.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
-
 $(BUILD)/analyzer_kokkosview.cuda.o: analyzer_kokkos.cc analyzer_kokkos.h input.h loops.h output.h rawtodigi_kokkosview.h kokkosConfig.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -DDIGI_KOKKOSVIEW $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS) -o $@ -c $<
 
 $(BUILD)/main_kokkosview.cuda.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h output.h kokkosConfig.h | $(BUILD)
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -DDIGI_KOKKOS -DDIGI_KOKKOS_CUDA -DDIGI_KOKKOSVIEW -o $@ -c $<
 
-test-kokkosview-cuda:  $(BUILD)/main_kokkosview.cuda.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.cuda.o $(BUILD)/rawtodigi_kokkosview.cuda.o | $(KOKKOS_LINK_DEPENDS)
+test-kokkosview-cuda:  $(BUILD)/main_kokkosview.cuda.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.cuda.o | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)
 
 # Kokkos implementation with run-time device choice
@@ -703,10 +694,10 @@ $(BUILD)/main_kokkos.o: main_kokkos.cc analyzer_kokkos.h input.h modules.h outpu
 	$(CXX) $(CXX_FLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(MAIN_KOKKOS_CXXFLAGS) -o $@ -c $<
 
 TEST_KOKKOS_OBJS := $(BUILD)/main_kokkos.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkos.serial.o $(BUILD)/analyzer_kokkos.omp.o $(BUILD)/rawtodigi_kokkos.serial.o $(BUILD)/rawtodigi_kokkos.omp.o
-TEST_KOKKOSVIEW_OBJS := $(BUILD)/main_kokkos.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.serial.o $(BUILD)/analyzer_kokkosview.omp.o $(BUILD)/rawtodigi_kokkosview.serial.o $(BUILD)/rawtodigi_kokkosview.omp.o
+TEST_KOKKOSVIEW_OBJS := $(BUILD)/main_kokkos.o $(BUILD)/kokkosConfig_common.o $(BUILD)/analyzer_kokkosview.serial.o $(BUILD)/analyzer_kokkosview.omp.o
 ifdef HAS_CUDA
   TEST_KOKKOS_OBJS += $(BUILD)/analyzer_kokkos.cuda.o $(BUILD)/rawtodigi_kokkos.cuda.o
-  TEST_KOKKOSVIEW_OBJS += $(BUILD)/analyzer_kokkosview.cuda.o $(BUILD)/rawtodigi_kokkosview.cuda.o
+  TEST_KOKKOSVIEW_OBJS += $(BUILD)/analyzer_kokkosview.cuda.o
 endif
 test-kokkos:  $(TEST_KOKKOS_OBJS)  | $(KOKKOS_LINK_DEPENDS)
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(KOKKOS_CXXFLAGS) $(KOKKOS_CXXLDFLAGS) $(KOKKOS_LIBS)

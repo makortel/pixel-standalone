@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#ifdef DIGI_KOKKOS
+#ifdef DIGI_KOKKOSVIEW
 #include <Kokkos_Core.hpp>
 #endif
 

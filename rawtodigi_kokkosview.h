@@ -7,6 +7,8 @@
 #include "input.h"
 #include "output.h"
 
+// In principle the namespace should be KOKKOS_NAMESPACE, but for some reason
+// that lead to weird compilation errors. To be investigated later.
 namespace kokkos_serial {
   class Packing {
   public:
