@@ -11,16 +11,15 @@
 
 namespace {
   void print_help(std::string const& name) {
-    std::cout
-        << name << ": [--numberOfThreads NT]"
-        << "\n\n"
-        << "Options\n"
-        << " --numberOfThreads   Number of threads to use (default -1 for all cores(?)1)\n"
-        << std::endl;
+    std::cout << name << ": [--numberOfThreads NT]"
+              << "\n\n"
+              << "Options\n"
+              << " --numberOfThreads   Number of threads to use (default -1 for all cores(?)1)\n"
+              << std::endl;
   }
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = -1;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
@@ -38,7 +37,6 @@ int main(int argc, char **argv) {
     arguments.num_threads = numberOfThreads;
     kokkos_common::initialize(arguments);
   }
- 
 
   Input input = read_input();
   std::cout << "Got " << input.cablingMap.size << " for cabling, wordCounter " << input.wordCounter << std::endl;

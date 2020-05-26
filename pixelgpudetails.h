@@ -3,6 +3,10 @@
 
 #include <cstdint>
 
+#ifdef DIGI_KOKKOSVIEW
+#include <Kokkos_Core.hpp>
+#endif
+
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
   // Update the number FED based on maximum fed found in the cabling map
@@ -89,6 +93,32 @@ struct alignas(128) SiPixelFedCablingMapGPU {
   unsigned char badRocs[pixelgpudetails::MAX_SIZE];
   unsigned int size = 0;
 };
+
+#ifdef DIGI_KOKKOSVIEW
+template <typename MemorySpace>
+struct SiPixelFedCablingMapKokkosDevice {
+  Kokkos::View<unsigned int*, MemorySpace> fed;
+  Kokkos::View<unsigned int*, MemorySpace> link;
+  Kokkos::View<unsigned int*, MemorySpace> roc;
+  Kokkos::View<unsigned int*, MemorySpace> RawId;
+  Kokkos::View<unsigned int*, MemorySpace> rocInDet;
+  Kokkos::View<unsigned int*, MemorySpace> moduleId;
+  Kokkos::View<unsigned char*, MemorySpace> badRocs;
+  Kokkos::View<unsigned int*, MemorySpace> size;
+};
+
+template <typename MemorySpace>
+struct SiPixelFedCablingMapKokkosHost {
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror fed;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror link;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror roc;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror RawId;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror rocInDet;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror moduleId;
+  typename Kokkos::View<unsigned char*, MemorySpace>::HostMirror badRocs;
+  typename Kokkos::View<unsigned int*, MemorySpace>::HostMirror size;
+};
+#endif
 
 struct PixelErrorCompact {
   uint32_t rawId;

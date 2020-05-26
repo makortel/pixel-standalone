@@ -16,6 +16,6 @@ namespace KOKKOS_NAMESPACE {
                                  bool includeErrors,
                                  bool debug,
                                  const int32_t index);
-}  // end namespace kokkos
+}  // namespace KOKKOS_NAMESPACE
 
 #endif  // rawtodigi_kokkos_h_

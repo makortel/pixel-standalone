@@ -17,6 +17,6 @@ using KokkosExecSpace = Kokkos::Cuda;
 namespace kokkos_common {
   void initialize(const Kokkos::InitArguments& arguments);
   void finalize();
-}
+}  // namespace kokkos_common
 
 #endif
